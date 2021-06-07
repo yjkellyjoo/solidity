@@ -146,6 +146,13 @@ set(libyul_sources
 )
 detect_stray_source_files("${libyul_sources}" "libyul/")
 
+set(solc_sources
+    solc/CommandLineParser.cpp
+    ../solc/CommandLineParser.h
+    ../solc/CommandLineParser.cpp
+)
+detect_stray_source_files("${solc_sources}" "solc/")
+
 set(yul_phaser_sources
     yulPhaser/TestHelpers.h
     yulPhaser/TestHelpers.cpp
@@ -174,6 +181,7 @@ add_executable(soltest ${sources}
     ${libyul_sources}
     ${libsolidity_sources}
     ${libsolidity_util_sources}
+    ${solc_sources}
     ${yul_phaser_sources}
 )
 target_link_libraries(soltest PRIVATE libsolc yul solidity smtutil solutil phaser Boost::boost yulInterpreter evmasm Boost::filesystem Boost::program_options Boost::unit_test_framework evmc)
