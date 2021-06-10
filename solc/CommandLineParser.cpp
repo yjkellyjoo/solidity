@@ -270,6 +270,95 @@ bool checkMutuallyExclusive(boost::program_options::variables_map const& args, s
 
 }
 
+bool OutputSelection::operator==(OutputSelection const& _other) const noexcept
+{
+	static_assert(
+		sizeof(*this) == 15 * sizeof(bool),
+		"Remember to update code below if you add/remove fields."
+	);
+
+	return
+		astCompactJson == _other.astCompactJson &&
+		asm_ == _other.asm_ &&
+		asmJson == _other.asmJson &&
+		opcodes == _other.opcodes &&
+		binary == _other.binary &&
+		binaryRuntime == _other.binaryRuntime &&
+		abi == _other.abi &&
+		ir == _other.ir &&
+		irOptimized == _other.irOptimized &&
+		ewasm == _other.ewasm &&
+		signatureHashes == _other.signatureHashes &&
+		natspecUser == _other.natspecUser &&
+		natspecDev == _other.natspecDev &&
+		metadata == _other.metadata &&
+		storageLayout == _other.storageLayout;
+}
+
+bool CombinedJsonRequests::operator==(CombinedJsonRequests const& _other) const noexcept
+{
+	static_assert(
+		sizeof(*this) == 17 * sizeof(bool),
+		"Remember to update code below if you add/remove fields."
+	);
+
+	return
+		abi == _other.abi &&
+		metadata == _other.metadata &&
+		binary == _other.binary &&
+		binaryRuntime == _other.binaryRuntime &&
+		opcodes == _other.opcodes &&
+		asm_ == _other.asm_ &&
+		storageLayout == _other.storageLayout &&
+		generatedSources == _other.generatedSources &&
+		generatedSourcesRuntime == _other.generatedSourcesRuntime &&
+		srcMap == _other.srcMap &&
+		srcMapRuntime == _other.srcMapRuntime &&
+		funDebug == _other.funDebug &&
+		funDebugRuntime == _other.funDebugRuntime &&
+		signatureHashes == _other.signatureHashes &&
+		natspecDev == _other.natspecDev &&
+		natspecUser == _other.natspecUser &&
+		ast == _other.ast;
+}
+
+bool CommandLineOptions::operator==(CommandLineOptions const& _other) const noexcept
+{
+	return
+		sourceFilePaths == _other.sourceFilePaths &&
+		standardJsonInputFile == _other.standardJsonInputFile &&
+		remappings == _other.remappings &&
+		addStdin == _other.addStdin &&
+		basePath == _other.basePath &&
+		allowedDirectories == _other.allowedDirectories &&
+		ignoreMissingInputFiles == _other.ignoreMissingInputFiles &&
+		errorRecovery == _other.errorRecovery &&
+		outputDir == _other.outputDir &&
+		overwriteFiles == _other.overwriteFiles &&
+		evmVersion == _other.evmVersion &&
+		experimentalViaIR == _other.experimentalViaIR &&
+		revertStrings == _other.revertStrings &&
+		stopAfter == _other.stopAfter &&
+		inputMode == _other.inputMode &&
+		targetMachine == _other.targetMachine &&
+		inputAssemblyLanguage == _other.inputAssemblyLanguage &&
+		libraries == _other.libraries &&
+		prettyJson == _other.prettyJson &&
+		coloredOutput == _other.coloredOutput &&
+		withErrorIds == _other.withErrorIds &&
+		selectedOutputs == _other.selectedOutputs &&
+		estimateGas == _other.estimateGas &&
+		combinedJsonRequests == _other.combinedJsonRequests &&
+		metadataHash == _other.metadataHash &&
+		metadataLiteral == _other.metadataLiteral &&
+		optimize == _other.optimize &&
+		expectedExecutionsPerDeployment == _other.expectedExecutionsPerDeployment &&
+		noOptimizeYul == _other.noOptimizeYul &&
+		yulOptimiserSteps == _other.yulOptimiserSteps &&
+		initializeModelChecker == _other.initializeModelChecker &&
+		modelCheckerSettings == _other.modelCheckerSettings;
+}
+
 bool CommandLineParser::parseInputPathsAndRemappings()
 {
 	m_options.input.ignoreMissingFiles = (m_args.count(g_argIgnoreMissingFiles) > 0);
