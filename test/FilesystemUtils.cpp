@@ -24,6 +24,20 @@ using namespace std;
 using namespace solidity;
 using namespace solidity::test;
 
+void solidity::test::createEmptyFilesWithParentDirs(set<boost::filesystem::path> const& _paths)
+{
+	for (boost::filesystem::path const& path: _paths)
+	{
+		if (!path.parent_path().empty())
+			boost::filesystem::create_directories(path.parent_path());
+
+		ofstream file;
+		file.exceptions(ofstream::badbit | ofstream::failbit);
+		file.open(path);
+		soltestAssert(boost::filesystem::exists(path), "");
+	}
+}
+
 void solidity::test::createFileWithContent(boost::filesystem::path const& _path, string const& content)
 {
 	if (boost::filesystem::is_regular_file(_path))
