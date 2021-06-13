@@ -899,10 +899,19 @@ General Information)").c_str(),
 		g_argImportAst,
 	});
 
-	if (m_args.count(g_argStandardJSON))
-	{
+	if (m_args.count(g_argStandardJSON) > 0)
 		m_options.input.mode = InputMode::StandardJson;
+	else if (m_args.count(g_argAssemble) > 0 || m_args.count(g_argStrictAssembly) > 0 || m_args.count(g_argYul) > 0)
+		m_options.input.mode = InputMode::Assembler;
+	else if (m_args.count(g_argLink) > 0)
+		m_options.input.mode = InputMode::Linker;
+	else if (m_args.count(g_argImportAst) > 0)
+		m_options.input.mode = InputMode::CompilerWithASTImport;
+	else
+		m_options.input.mode = InputMode::Compiler;
 
+	if (m_options.input.mode == InputMode::StandardJson)
+	{
 		vector<string> inputFiles;
 		if (m_args.count(g_argInputFile))
 			inputFiles = m_args[g_argInputFile].as<vector<string>>();
@@ -937,10 +946,8 @@ General Information)").c_str(),
 		m_options.output.evmVersion = *versionOption;
 	}
 
-	if (m_args.count(g_argAssemble) || m_args.count(g_argStrictAssembly) || m_args.count(g_argYul))
+	if (m_options.input.mode == InputMode::Assembler)
 	{
-		m_options.input.mode = InputMode::Assembler;
-
 		vector<string> const nonAssemblyModeOptions = {
 			// TODO: The list is not complete. Add more.
 			g_argOutputDir,
@@ -1054,11 +1061,8 @@ General Information)").c_str(),
 		return false;
 	}
 
-	if (m_args.count(g_argLink))
-	{
-		m_options.input.mode = InputMode::Linker;
+	if (m_options.input.mode == InputMode::Linker)
 		return true;
-	}
 
 	if (m_args.count(g_argMetadataHash))
 	{
@@ -1151,9 +1155,7 @@ General Information)").c_str(),
 		m_options.optimizer.yulSteps = m_args[g_strYulOptimizations].as<string>();
 	}
 
-	if (m_args.count(g_argImportAst) > 0)
-		m_options.input.mode = InputMode::CompilerWithASTImport;
-	else
+	if (m_options.input.mode == InputMode::Compiler)
 		m_options.input.errorRecovery = (m_args.count(g_argErrorRecovery) > 0);
 
 	solAssert(m_options.input.mode == InputMode::Compiler || m_options.input.mode == InputMode::CompilerWithASTImport, "");
