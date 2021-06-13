@@ -312,7 +312,6 @@ bool CommandLineOptions::operator==(CommandLineOptions const& _other) const noex
 {
 	return
 		input.paths == _other.input.paths &&
-		input.standardJsonFile == _other.input.standardJsonFile &&
 		input.remappings == _other.input.remappings &&
 		input.addStdin == _other.input.addStdin &&
 		input.basePath == _other.input.basePath &&
@@ -348,12 +347,20 @@ bool CommandLineOptions::operator==(CommandLineOptions const& _other) const noex
 bool CommandLineParser::parseInputPathsAndRemappings()
 {
 	m_options.input.ignoreMissingFiles = (m_args.count(g_argIgnoreMissingFiles) > 0);
+
 	if (m_args.count(g_argInputFile))
 		for (string path: m_args[g_argInputFile].as<vector<string>>())
 		{
 			auto eq = find(path.begin(), path.end(), '=');
 			if (eq != path.end())
 			{
+				if (m_options.input.mode == InputMode::StandardJson)
+				{
+					serr() << "Import remappings are not accepted on the command line in Standard JSON mode." << endl;
+					serr() << "Please put them under 'settings.remappings' in the JSON input." << endl;
+					return false;
+				}
+
 				if (auto r = ImportRemapper::parseRemapping(path))
 					m_options.input.remappings.emplace_back(std::move(*r));
 				else
@@ -370,6 +377,25 @@ bool CommandLineParser::parseInputPathsAndRemappings()
 			else
 				m_options.input.paths.insert(path);
 		}
+
+	if (m_options.input.mode == InputMode::StandardJson)
+	{
+		if (m_options.input.paths.size() > 1 || (m_options.input.paths.size() == 1 && m_options.input.addStdin))
+		{
+			serr() << "Too many input files for --" << g_argStandardJSON << "." << endl;
+			serr() << "Please either specify a single file name or provide its content on standard input." << endl;
+			return false;
+		}
+		else if (m_options.input.paths.size() == 0)
+			// Standard JSON mode input used to be handled separately and zero files meant "read from stdin".
+			// Keep it working that way for backwards-compatibility.
+			m_options.input.addStdin = true;
+	}
+	else if (m_options.input.paths.size() == 0 && !m_options.input.addStdin)
+	{
+		serr() << "No input files given. If you wish to use the standard input please specify \"-\" explicitly." << endl;
+		return false;
+	}
 
 	return true;
 }
@@ -914,24 +940,11 @@ General Information)").c_str(),
 	else
 		m_options.input.mode = InputMode::Compiler;
 
-	if (m_options.input.mode == InputMode::StandardJson)
-	{
-		vector<string> inputFiles;
-		if (m_args.count(g_argInputFile))
-			inputFiles = m_args[g_argInputFile].as<vector<string>>();
-		if (inputFiles.size() == 1)
-			m_options.input.standardJsonFile = inputFiles[0];
-		else if (inputFiles.size() > 1)
-		{
-			serr() << "If --" << g_argStandardJSON << " is used, only zero or one input files are supported." << endl;
-			return false;
-		}
-
-		return true;
-	}
-
 	if (!parseInputPathsAndRemappings())
 		return false;
+
+	if (m_options.input.mode == InputMode::StandardJson)
+		return true;
 
 	if (m_args.count(g_argLibraries))
 		for (string const& library: m_args[g_argLibraries].as<vector<string>>())
