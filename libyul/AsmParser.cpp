@@ -598,3 +598,4 @@ bool Parser::isValidNumberLiteral(string const& _literal)
 	else
 		return _literal.find_first_not_of("0123456789") == string::npos;
 }
+
