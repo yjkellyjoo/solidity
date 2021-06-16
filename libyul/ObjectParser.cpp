@@ -106,6 +106,7 @@ shared_ptr<Block> ObjectParser::parseCode()
 
 shared_ptr<Block> ObjectParser::parseBlock()
 {
+	// TODO: maybe here check for @use-src?
 	Parser parser(m_errorReporter, m_dialect);
 	shared_ptr<Block> block = parser.parse(m_scanner, true);
 	yulAssert(block || m_errorReporter.hasErrors(), "Invalid block but no error!");
