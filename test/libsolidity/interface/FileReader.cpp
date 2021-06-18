@@ -169,7 +169,7 @@ BOOST_AUTO_TEST_CASE(normalizeCLIPathForVFS_stripping_root_name)
 	boost::filesystem::path normalizedPath = FileReader::normalizeCLIPathForVFS(tempDir.path());
 	BOOST_TEST(normalizedPath == "\\" / tempDir.path().lexically_relative(tempDir.path().root_name()));
 	BOOST_TEST(normalizedPath.root_name().empty());
-	BOOST_TEST(normalizedPath.root_directory() == unnamedRoot);
+	BOOST_TEST(normalizedPath.root_directory() == "\\");
 }
 #endif
 
@@ -213,22 +213,22 @@ BOOST_AUTO_TEST_CASE(normalizeCLIPathForVFS_case_sensitivity)
 	bool caseSensitiveFilesystem = boost::filesystem::create_directories(tempDir.path() / "ABC");
 	soltestAssert(boost::filesystem::equivalent(tempDir.path() / "abc", tempDir.path() / "ABC") != caseSensitiveFilesystem, "");
 
-	BOOST_TEST(FileReader::normalizeCLIPathForVFS((tempDir.path() / "abc")).native() == (tempDir.path() / "abc").native());
-	BOOST_TEST(FileReader::normalizeCLIPathForVFS((tempDir.path() / "ABC")).native() == (tempDir.path() / "ABC").native());
+	BOOST_TEST((FileReader::normalizeCLIPathForVFS((tempDir.path() / "abc")).native() == (tempDir.path() / "abc").native()));
+	BOOST_TEST((FileReader::normalizeCLIPathForVFS((tempDir.path() / "ABC")).native() == (tempDir.path() / "ABC").native()));
 }
 
 BOOST_AUTO_TEST_CASE(normalizeCLIPathForVFS_path_separators)
 {
 	// Even on Windows we want / as a separator.
-	BOOST_TEST(FileReader::normalizeCLIPathForVFS("/a/b/c").native() == "/a/b/c");
+	BOOST_TEST((FileReader::normalizeCLIPathForVFS("/a/b/c").native() == boost::filesystem::path("/a/b/c").native()));
 }
 
 BOOST_AUTO_TEST_CASE(isPathPrefix_file_prefix)
 {
 	BOOST_TEST(FileReader::isPathPrefix("/", "/contract.sol"));
 	BOOST_TEST(FileReader::isPathPrefix("/contract.sol", "/contract.sol"));
-	BOOST_TEST(!FileReader::isPathPrefix("/contract.sol/", "/contract.sol"));
-	BOOST_TEST(!FileReader::isPathPrefix("/contract.sol/.", "/contract.sol"));
+	BOOST_TEST(FileReader::isPathPrefix("/contract.sol/", "/contract.sol"));
+	BOOST_TEST(FileReader::isPathPrefix("/contract.sol/.", "/contract.sol"));
 
 	BOOST_TEST(FileReader::isPathPrefix("/", "/a/bc/def/contract.sol"));
 	BOOST_TEST(FileReader::isPathPrefix("/a", "/a/bc/def/contract.sol"));
@@ -305,6 +305,8 @@ BOOST_AUTO_TEST_CASE(stripPathPrefix_file_prefix)
 {
 	BOOST_TEST(FileReader::stripPathPrefix("/", "/contract.sol") == "contract.sol");
 	BOOST_TEST(FileReader::stripPathPrefix("/contract.sol", "/contract.sol") == ".");
+	BOOST_TEST(FileReader::stripPathPrefix("/contract.sol/", "/contract.sol") == ".");
+	BOOST_TEST(FileReader::stripPathPrefix("/contract.sol/.", "/contract.sol") == ".");
 
 	BOOST_TEST(FileReader::stripPathPrefix("/", "/a/bc/def/contract.sol") == "a/bc/def/contract.sol");
 	BOOST_TEST(FileReader::stripPathPrefix("/a", "/a/bc/def/contract.sol") == "bc/def/contract.sol");

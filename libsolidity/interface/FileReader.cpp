@@ -126,9 +126,11 @@ boost::filesystem::path FileReader::normalizeCLIPathForVFS(boost::filesystem::pa
 		!boost::starts_with(normalizedPath.root_name().string(), "\\\\")
 	)
 	{
-		boost::filesystem::path workingDirRootPath = boost::filesystem::canonical(boost::filesystem::current_path()).root_path();
+		boost::filesystem::path workingDirRootPath = boost::filesystem::weakly_canonical(boost::filesystem::current_path()).root_path();
 		if (normalizedPath.root_name() == workingDirRootPath)
 			normalizedRootPath = "/";
+		else if (normalizedPath.root_name().empty())
+			normalizedRootPath = workingDirRootPath;
 	}
 
 	boost::filesystem::path normalizedPathNoDotDot = normalizedPath;
@@ -159,28 +161,25 @@ bool FileReader::isPathPrefix(boost::filesystem::path _prefix, boost::filesystem
 	solAssert(!boost::starts_with(_prefix.root_name().string(), "\\\\"), "");
 	solAssert(!boost::starts_with(_path.root_name().string(), "\\\\"), "");
 
-	// If a boost path ends with / (i.e. represents a directory), filename() is a dot.
-	// Compare lengths before stripping the dot so that /a/b/c.sol/ is not a prefix of /a/b/c.sol.
-	long prefixSegmentCount = std::distance(_prefix.begin(), _prefix.end());
-	long pathSegmentCount = std::distance(_path.begin(), _path.end());
-	if (prefixSegmentCount > pathSegmentCount)
-		return false;
-
-	// This ensures that both /a/b and /a/b/ is a prefix of /a/b/c.sol
-	if (_prefix.filename() == ".")
+	// Before 1.72.0 lexically_relative() was not handling paths with empty, dot and dot dot segments
+	// correctly (see https://github.com/boostorg/filesystem/issues/76). The only case where this
+	// is possible after our normalization is a directory name ending in a slash (filename is a dot).
+	if (_prefix.filename_is_dot())
 		_prefix.remove_filename();
 
-	// NOTE: This compares only as many segments are there are in _prefix and ignores the rest.
-	return std::equal(_prefix.begin(), _prefix.end(), _path.begin());
+	boost::filesystem::path strippedPath = _path.lexically_relative(_prefix);
+	return !strippedPath.empty() && *strippedPath.begin() != "..";
 }
 
 boost::filesystem::path FileReader::stripPathPrefix(boost::filesystem::path _prefix, boost::filesystem::path const& _path)
 {
 	solAssert(isPathPrefix(_prefix, _path), "");
 
+	if (_prefix.filename_is_dot())
+		_prefix.remove_filename();
+
 	boost::filesystem::path strippedPath = _path.lexically_relative(_prefix);
 	solAssert(strippedPath.empty() || *strippedPath.begin() != "..", "");
-
 	return strippedPath;
 }
 
