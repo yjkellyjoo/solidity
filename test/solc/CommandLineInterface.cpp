@@ -345,6 +345,14 @@ BOOST_AUTO_TEST_CASE(cli_paths_to_source_unit_names_no_base_path)
 	createEmptyFilesWithParentDirs(expectedOptions.input.paths);
 	OptionsReaderAndMessages result = parseCommandLineAndReadInputFiles(commandLine);
 
+	// TMP:
+	cout << "EXPECTED SOURCES" << endl;
+	for (auto const& pair: expectedSources)
+		cout << pair.first << " [" << pair.second << "]" << endl;
+	cout << "ACTUAL SOURCES" << endl;
+	for (auto const& pair: result.reader.sourceCodes())
+		cout << pair.first << " [" << pair.second << "]" << endl;
+
 	BOOST_TEST(result.stderrContent == "");
 	BOOST_TEST(result.stdoutContent == "");
 	BOOST_REQUIRE(result.success);
@@ -395,6 +403,14 @@ BOOST_AUTO_TEST_CASE(cli_paths_to_source_unit_names_base_path_same_as_work_dir)
 
 	createEmptyFilesWithParentDirs(expectedOptions.input.paths);
 	OptionsReaderAndMessages result = parseCommandLineAndReadInputFiles(commandLine);
+
+	// TMP:
+	cout << "EXPECTED SOURCES" << endl;
+	for (auto const& pair: expectedSources)
+		cout << pair.first << " [" << pair.second << "]" << endl;
+	cout << "ACTUAL SOURCES" << endl;
+	for (auto const& pair: result.reader.sourceCodes())
+		cout << pair.first << " [" << pair.second << "]" << endl;
 
 	BOOST_TEST(result.stderrContent == "");
 	BOOST_TEST(result.stdoutContent == "");
@@ -453,6 +469,14 @@ BOOST_AUTO_TEST_CASE(cli_paths_to_source_unit_names_base_path_different_from_wor
 	createEmptyFilesWithParentDirs(expectedOptions.input.paths);
 	OptionsReaderAndMessages result = parseCommandLineAndReadInputFiles(commandLine);
 
+	// TMP:
+	cout << "EXPECTED SOURCES" << endl;
+	for (auto const& pair: expectedSources)
+		cout << pair.first << " [" << pair.second << "]" << endl;
+	cout << "ACTUAL SOURCES" << endl;
+	for (auto const& pair: result.reader.sourceCodes())
+		cout << pair.first << " [" << pair.second << "]" << endl;
+
 	BOOST_TEST(result.stderrContent == "");
 	BOOST_TEST(result.stdoutContent == "");
 	BOOST_REQUIRE(result.success);
@@ -510,6 +534,14 @@ BOOST_AUTO_TEST_CASE(cli_paths_to_source_unit_names_relative_base_path)
 
 	createEmptyFilesWithParentDirs(expectedOptions.input.paths);
 	OptionsReaderAndMessages result = parseCommandLineAndReadInputFiles(commandLine);
+
+	// TMP:
+	cout << "EXPECTED SOURCES" << endl;
+	for (auto const& pair: expectedSources)
+		cout << pair.first << " [" << pair.second << "]" << endl;
+	cout << "ACTUAL SOURCES" << endl;
+	for (auto const& pair: result.reader.sourceCodes())
+		cout << pair.first << " [" << pair.second << "]" << endl;
 
 	BOOST_TEST(result.stderrContent == "");
 	BOOST_TEST(result.stdoutContent == "");
@@ -664,6 +696,14 @@ BOOST_AUTO_TEST_CASE(cli_paths_to_source_unit_names_normalization_and_weird_name
 
 	OptionsReaderAndMessages result = parseCommandLineAndReadInputFiles(commandLine);
 
+	// TMP:
+	cout << "EXPECTED SOURCES" << endl;
+	for (auto const& pair: expectedSources)
+		cout << pair.first << " [" << pair.second << "]" << endl;
+	cout << "ACTUAL SOURCES" << endl;
+	for (auto const& pair: result.reader.sourceCodes())
+		cout << pair.first << " [" << pair.second << "]" << endl;
+
 	BOOST_TEST(result.stderrContent == "");
 	BOOST_TEST(result.stdoutContent == "");
 	BOOST_REQUIRE(result.success);
@@ -719,6 +759,14 @@ BOOST_AUTO_TEST_CASE(cli_paths_to_source_unit_names_symlinks)
 	};
 
 	OptionsReaderAndMessages result = parseCommandLineAndReadInputFiles(commandLine);
+
+	// TMP:
+	cout << "EXPECTED SOURCES" << endl;
+	for (auto const& pair: expectedSources)
+		cout << pair.first << " [" << pair.second << "]" << endl;
+	cout << "ACTUAL SOURCES" << endl;
+	for (auto const& pair: result.reader.sourceCodes())
+		cout << pair.first << " [" << pair.second << "]" << endl;
 
 	BOOST_TEST(result.stderrContent == "");
 	BOOST_TEST(result.stdoutContent == "");
