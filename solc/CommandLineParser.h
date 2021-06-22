@@ -177,12 +177,12 @@ private:
 	/// @return false if there are any validation errors, true otherwise.
 	bool parseCombinedJsonOption();
 
-	/// Parses the names of the input files, remappingsfor all modes except for Standard JSON.
+	/// Parses the names of the input files, remappings for all modes except for Standard JSON.
 	/// Does not check if files actually exist.
 	/// @return false if there are any validation errors, true otherwise.
 	bool parseInputPathsAndRemappings();
 
-	/// Tries to read from the file @a _input or interprets _input literally if that fails.
+	/// Tries to read from the file @a _input or interprets @a _input literally if that fails.
 	/// It then tries to parse the contents and appends to m_options.libraries.
 	/// @return false if there are any validation errors, true otherwise.
 	bool parseLibraryOption(std::string const& _input);
