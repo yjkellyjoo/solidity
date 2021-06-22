@@ -49,7 +49,7 @@ namespace
 optional<CommandLineOptions> parseCommandLine(vector<string> const& commandLine)
 {
 	size_t argc = commandLine.size();
-	vector<char const*> argv(commandLine.size() + 1);
+	vector<char const*> argv(argc + 1);
 
 	// argv[argc] typically contains NULL
 	argv[argc] = nullptr;
@@ -61,7 +61,7 @@ optional<CommandLineOptions> parseCommandLine(vector<string> const& commandLine)
 	bool success = cliParser.parse(
 		static_cast<int>(argc),
 		argv.data(),
-		/* interactiveTerminal*/ false
+		false // interactiveTerminal
 	);
 
 	if (!success)
