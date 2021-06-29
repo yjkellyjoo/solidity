@@ -325,38 +325,38 @@ bool CombinedJsonRequests::operator==(CombinedJsonRequests const& _other) const 
 bool CommandLineOptions::operator==(CommandLineOptions const& _other) const noexcept
 {
 	return
-		sourceFilePaths == _other.sourceFilePaths &&
-		standardJsonInputFile == _other.standardJsonInputFile &&
-		remappings == _other.remappings &&
-		addStdin == _other.addStdin &&
-		basePath == _other.basePath &&
-		allowedDirectories == _other.allowedDirectories &&
-		ignoreMissingInputFiles == _other.ignoreMissingInputFiles &&
-		errorRecovery == _other.errorRecovery &&
-		outputDir == _other.outputDir &&
-		overwriteFiles == _other.overwriteFiles &&
-		evmVersion == _other.evmVersion &&
-		experimentalViaIR == _other.experimentalViaIR &&
-		revertStrings == _other.revertStrings &&
-		stopAfter == _other.stopAfter &&
-		inputMode == _other.inputMode &&
-		targetMachine == _other.targetMachine &&
-		inputAssemblyLanguage == _other.inputAssemblyLanguage &&
-		libraries == _other.libraries &&
-		prettyJson == _other.prettyJson &&
-		coloredOutput == _other.coloredOutput &&
-		withErrorIds == _other.withErrorIds &&
-		selectedOutputs == _other.selectedOutputs &&
-		estimateGas == _other.estimateGas &&
-		combinedJsonRequests == _other.combinedJsonRequests &&
-		metadataHash == _other.metadataHash &&
-		metadataLiteral == _other.metadataLiteral &&
-		optimize == _other.optimize &&
-		expectedExecutionsPerDeployment == _other.expectedExecutionsPerDeployment &&
-		noOptimizeYul == _other.noOptimizeYul &&
-		yulOptimiserSteps == _other.yulOptimiserSteps &&
-		initializeModelChecker == _other.initializeModelChecker &&
-		modelCheckerSettings == _other.modelCheckerSettings;
+		input.paths == _other.input.paths &&
+		input.standardJsonFile == _other.input.standardJsonFile &&
+		input.remappings == _other.input.remappings &&
+		input.addStdin == _other.input.addStdin &&
+		input.basePath == _other.input.basePath &&
+		input.allowedDirectories == _other.input.allowedDirectories &&
+		input.ignoreMissingFiles == _other.input.ignoreMissingFiles &&
+		input.errorRecovery == _other.input.errorRecovery &&
+		output.dir == _other.output.dir &&
+		output.overwriteFiles == _other.output.overwriteFiles &&
+		output.evmVersion == _other.output.evmVersion &&
+		output.experimentalViaIR == _other.output.experimentalViaIR &&
+		output.revertStrings == _other.output.revertStrings &&
+		output.stopAfter == _other.output.stopAfter &&
+		input.mode == _other.input.mode &&
+		assembly.targetMachine == _other.assembly.targetMachine &&
+		assembly.inputLanguage == _other.assembly.inputLanguage &&
+		linker.libraries == _other.linker.libraries &&
+		formatting.prettyJson == _other.formatting.prettyJson &&
+		formatting.coloredOutput == _other.formatting.coloredOutput &&
+		formatting.withErrorIds == _other.formatting.withErrorIds &&
+		compiler.outputs == _other.compiler.outputs &&
+		compiler.estimateGas == _other.compiler.estimateGas &&
+		compiler.combinedJsonRequests == _other.compiler.combinedJsonRequests &&
+		metadata.hash == _other.metadata.hash &&
+		metadata.literalSources == _other.metadata.literalSources &&
+		optimizer.enabled == _other.optimizer.enabled &&
+		optimizer.expectedExecutionsPerDeployment == _other.optimizer.expectedExecutionsPerDeployment &&
+		optimizer.noOptimizeYul == _other.optimizer.noOptimizeYul &&
+		optimizer.yulSteps == _other.optimizer.yulSteps &&
+		modelChecker.initialize == _other.modelChecker.initialize &&
+		modelChecker.settings == _other.modelChecker.settings;
 }
 
 bool CommandLineParser::parseInputPathsAndRemappings()
