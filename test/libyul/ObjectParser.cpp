@@ -162,6 +162,35 @@ BOOST_AUTO_TEST_CASE(to_string)
 	BOOST_CHECK_EQUAL(asmStack.print(), expectation);
 }
 
+BOOST_AUTO_TEST_CASE(use_src_empty)
+{
+	auto const mapping = ObjectParser::tryGetSourceLocationMapping("");
+	BOOST_REQUIRE(mapping);
+	BOOST_REQUIRE_EQUAL(mapping->size(), 0);
+}
+
+BOOST_AUTO_TEST_CASE(use_src_simple)
+{
+	auto const mapping = ObjectParser::tryGetSourceLocationMapping(R"(@use-src 0:"contract.sol")");
+	BOOST_REQUIRE(mapping);
+	BOOST_REQUIRE_EQUAL(mapping->size(), 1);
+	BOOST_REQUIRE_EQUAL(mapping->at(0), "contract.sol");
+}
+
+BOOST_AUTO_TEST_CASE(use_src_multiple)
+{
+	auto const mapping = ObjectParser::tryGetSourceLocationMapping(
+		R"(@use-src 0:"contract.sol", 1:"misc.yul")"
+	);
+	BOOST_REQUIRE(mapping);
+	BOOST_REQUIRE_EQUAL(mapping->size(), 2);
+	BOOST_REQUIRE_EQUAL(mapping->at(0), "contract.sol");
+	BOOST_REQUIRE_EQUAL(mapping->at(1), "misc.yul");
+}
+
+// TODO: test quoted string containing at least @ and ", make sure result is unquoted again
+// TODO: test invalid syntax
+
 BOOST_AUTO_TEST_SUITE_END()
 
 }

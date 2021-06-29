@@ -27,11 +27,34 @@
 
 #include <liblangutil/Token.h>
 
+#include <regex>
+
 using namespace std;
 using namespace solidity;
 using namespace solidity::yul;
 using namespace solidity::util;
 using namespace solidity::langutil;
+
+namespace
+{
+
+// NB: also in AsmParser, so maybe worth adding to libsolutil?
+optional<unsigned> toUnsignedInt(string const& _value)
+{
+	try
+	{
+		auto const ulong = stoul(_value);
+		if (ulong > std::numeric_limits<unsigned>::max())
+			return nullopt;
+		return static_cast<unsigned>(ulong);
+	}
+	catch (...)
+	{
+		return nullopt;
+	}
+}
+
+}
 
 shared_ptr<Object> ObjectParser::parse(shared_ptr<Scanner> const& _scanner, bool _reuseScanner)
 {
@@ -104,11 +127,94 @@ shared_ptr<Block> ObjectParser::parseCode()
 	return parseBlock();
 }
 
+optional<ObjectParser::ReverseSourceNameMap> ObjectParser::tryGetSourceLocationMapping() const
+{
+	return tryGetSourceLocationMapping(m_scanner->currentCommentLiteral());
+}
+
+optional<ObjectParser::ReverseSourceNameMap> ObjectParser::tryGetSourceLocationMapping(std::string const& _text)
+{
+	// @use-src 0:"abc.sol" , "1:foo.sol" ,2:"bar.sol"
+	//
+	// UseSrcList := UseSrc (',' UseSrc)*
+	// UseSrc     := [0-9]+ ':' FileName
+	// FileName   := "(([^\"]|\.)*)"
+	printf("tryGetSourceLocationMapping: \"%s\"\n", _text.c_str());
+
+	// Matches some "@use-src TEXT".
+	static std::regex const lineRE = std::regex(
+		R"~~~((^|\s+)@use-src\s+(.*)$)~~~",
+		std::regex_constants::ECMAScript | std::regex_constants::optimize
+	);
+	string_view text(_text);
+	std::cmatch cm;
+	if (!std::regex_search(text.data(), text.data() + text.size(), cm, lineRE))
+		return nullopt;
+	solAssert(cm.size() == 3, "");
+
+	printf("match line\n"); // TODO: remove debug prints
+	for (size_t i = 0; i < cm.size(); ++i)
+		printf("  cm[%zu]: %s\n", i, cm[i].str().c_str());
+
+	// Let @c text point to the parameter value (last match).
+	text = string_view(cm[2].first, static_cast<size_t>(std::distance(cm[2].first, cm[2].second)));
+
+	// iteratively match for NUM : STRING_LITERAL and increment
+	static regex const itemRE(R"~~~(\s*(\d+)\s*:\s*"(([^\"]|\.)*)")~~~",
+		std::regex_constants::ECMAScript | std::regex_constants::optimize
+	);
+
+	ReverseSourceNameMap result;
+
+	int k = 0;
+	while (!text.empty())
+	{
+		if (!std::regex_search(text.data(), text.data() + _text.size(), cm, itemRE))
+			return nullopt;
+		solAssert(cm.size() == 4, "");
+		printf("match/%d\n", ++k);
+		for (size_t i = 0; i < cm.size(); ++i)
+			printf("cm[%zu]: %s\n", i, cm[i].str().c_str());
+
+		auto const len = cm[0].length();
+		solAssert(len > 0, "");
+		text.remove_prefix(static_cast<size_t>(len));
+		solAssert(k <= 4, "");
+
+		auto const sourceIndex = toUnsignedInt(cm[1].str());
+		if (!sourceIndex)
+		{
+			// TODO: report error
+			return nullopt;
+		}
+
+		auto fileName = cm[2].str();
+		result[*sourceIndex] = fileName;
+	}
+
+	return result;
+}
+
+optional<ObjectParser::CharStreamMap>
+ObjectParser::convertToCharStreamMap(ReverseSourceNameMap const& _reverseSourceNames) const
+{
+	(void) _reverseSourceNames; // TODO map file names to their CharStream (needs CompilerStack for that)
+	return nullopt;
+}
+
 shared_ptr<Block> ObjectParser::parseBlock()
 {
 	// TODO: maybe here check for @use-src?
-	Parser parser(m_errorReporter, m_dialect);
-	shared_ptr<Block> block = parser.parse(m_scanner, true);
+	unique_ptr<Parser> parser;
+	if (auto sourceLocationMap = tryGetSourceLocationMapping())
+	{
+		auto charStreamMap = convertToCharStreamMap(*sourceLocationMap);
+		yulAssert(charStreamMap, "");
+		parser = make_unique<Parser>(m_errorReporter, m_dialect, *charStreamMap);
+	}
+	else
+		parser = make_unique<Parser>(m_errorReporter, m_dialect);
+	shared_ptr<Block> block = parser->parse(m_scanner, true);
 	yulAssert(block || m_errorReporter.hasErrors(), "Invalid block but no error!");
 	return block;
 }
