@@ -51,8 +51,8 @@ enum class InputMode
 
 struct CompilerOutputs
 {
-	bool operator!=(OutputSelection const& _other) const noexcept { return !(*this == _other); }
-	bool operator==(OutputSelection const& _other) const noexcept;
+	bool operator!=(CompilerOutputs const& _other) const noexcept { return !(*this == _other); }
+	bool operator==(CompilerOutputs const& _other) const noexcept;
 
 	bool astCompactJson = false;
 	bool asm_ = false;

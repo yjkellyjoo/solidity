@@ -270,7 +270,7 @@ bool checkMutuallyExclusive(boost::program_options::variables_map const& args, s
 
 }
 
-bool OutputSelection::operator==(OutputSelection const& _other) const noexcept
+bool CompilerOutputs::operator==(CompilerOutputs const& _other) const noexcept
 {
 	static_assert(
 		sizeof(*this) == 15 * sizeof(bool),
@@ -855,7 +855,7 @@ General Information)").c_str(),
 	m_options.formatting.prettyJson = (m_args.count(g_argPrettyJson) > 0);
 
 	static_assert(
-		sizeof(m_options.compiler.selectedOutputs) == 15 * sizeof(bool),
+		sizeof(m_options.compiler.outputs) == 15 * sizeof(bool),
 		"Remember to update code below if you add/remove fields."
 	);
 	m_options.compiler.outputs.astCompactJson = (m_args.count(g_argAstCompactJson) > 0);
