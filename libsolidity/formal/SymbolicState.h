@@ -159,7 +159,7 @@ public:
 	///   in _source and referenced sources.
 	/// - the symbolic storages for all contracts in _source and
 	///   referenced sources.
-	void prepareForSourceUnit(SourceUnit const& _source);
+	void prepareForSourceUnit(SourceUnit const& _source, bool _storage);
 
 	/// ABI functions.
 	//@{
@@ -184,7 +184,7 @@ private:
 	std::string contractSuffix(ContractDefinition const& _contract) const;
 
 	/// Builds state.storage based on _contracts.
-	void buildStorage(std::set<ContractDefinition const*> const& _contracts);
+	void buildStorage(std::set<ContractDefinition const*> const& _contracts, bool _allStorages);
 
 	/// Builds m_abi based on the abi.* calls _abiFunctions.
 	void buildABIFunctions(std::set<FunctionCall const*> const& _abiFunctions);

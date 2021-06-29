@@ -16,6 +16,7 @@
 */
 // SPDX-License-Identifier: GPL-3.0
 
+#include "libsmtutil/SolverInterface.h"
 #include <libsolidity/formal/CHC.h>
 
 #ifdef HAVE_Z3
@@ -153,12 +154,19 @@ void CHC::endVisit(ContractDefinition const& _contract)
 	smtutil::Expression zeroes(true);
 	for (auto var: stateVariablesIncludingInheritedAndPrivate(_contract))
 		zeroes = zeroes && currentValue(*var) == smt::zeroValue(var->type());
-	smtutil::Expression newAddress = state().addressActive(state().thisAddress()) == smtutil::Expression(false);
+
+	smtutil::Expression newAddress = externalCallsIsTrustedMode() ?
+		!state().addressActive(state().thisAddress()) :
+		smtutil::Expression(true);
+
 	addRule(smtutil::Expression::implies(initialConstraints(_contract) && zeroes && newAddress, predicate(entry)), entry.functor().name);
 	setCurrentBlock(entry);
 
 	auto const& entryAfterAddress = *createConstructorBlock(_contract, "implicit_constructor_entry_after_address");
-	state().setAddressActive(state().thisAddress(), true);
+
+	if (externalCallsIsTrustedMode())
+		state().setAddressActive(state().thisAddress(), true);
+
 	connectBlocks(m_currentBlock, predicate(entryAfterAddress));
 	setCurrentBlock(entryAfterAddress);
 
@@ -198,7 +206,9 @@ void CHC::endVisit(ContractDefinition const& _contract)
 		m_context.addAssertion(errorFlag().currentValue() == 0);
 	}
 
-	state().writeStateVars(_contract, state().thisAddress());
+	if (m_settings.externalCalls.isTrusted())
+		state().writeStateVars(_contract, state().thisAddress());
+
 	connectBlocks(m_currentBlock, summary(_contract));
 
 	setCurrentBlock(*m_constructorSummaries.at(&_contract));
@@ -701,6 +711,12 @@ void CHC::visitAddMulMod(FunctionCall const& _funCall)
 
 void CHC::visitDeployment(FunctionCall const& _funCall)
 {
+	if (!m_settings.externalCalls.isTrusted())
+	{
+		SMTEncoder::endVisit(_funCall);
+		return;
+	}
+
 	auto funType = dynamic_cast<FunctionType const*>(_funCall.expression().annotation().type);
 	ContractDefinition const* contract =
 		&dynamic_cast<ContractType const&>(*funType->returnParameterTypes().front()).contractDefinition();
@@ -864,10 +880,13 @@ void CHC::externalFunctionCallToTrustedCode(FunctionCall const& _funCall)
 	// set the origin to be the current transaction origin
 	m_context.addAssertion(state().txMember("tx.origin") == txOrigin);
 
-	// Load the called contract's state variables from the global state.
-	state().readStateVars(*function->annotation().contract, contractAddressValue(_funCall));
-	// Load the caller contract's state variables into the global state.
-	state().writeStateVars(*m_currentContract, state().thisAddress());
+	if (m_settings.externalCalls.isTrusted())
+	{
+		// Load the called contract's state variables from the global state.
+		state().readStateVars(*function->annotation().contract, contractAddressValue(_funCall));
+		// Load the caller contract's state variables into the global state.
+		state().writeStateVars(*m_currentContract, state().thisAddress());
+	}
 
 	smtutil::Expression pred = predicate(_funCall);
 
@@ -888,10 +907,13 @@ void CHC::externalFunctionCallToTrustedCode(FunctionCall const& _funCall)
 	bool usesStaticCall = function->stateMutability() == StateMutability::Pure || function->stateMutability() == StateMutability::View || kind == FunctionType::Kind::BareStaticCall;
 	if (!usesStaticCall)
 	{
-		// Load the called contract's state variables into the global state.
-		state().writeStateVars(*function->annotation().contract, contractAddressValue(_funCall));
-		// Load the caller contract's state variables from the global state.
-		state().readStateVars(*m_currentContract, state().thisAddress());
+		if (m_settings.externalCalls.isTrusted())
+		{
+			// Load the called contract's state variables into the global state.
+			state().writeStateVars(*function->annotation().contract, contractAddressValue(_funCall));
+			// Load the caller contract's state variables from the global state.
+			state().readStateVars(*m_currentContract, state().thisAddress());
+		}
 	}
 }
 

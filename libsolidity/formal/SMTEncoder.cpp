@@ -55,7 +55,7 @@ SMTEncoder::SMTEncoder(
 
 bool SMTEncoder::analyze(SourceUnit const& _source)
 {
-	state().prepareForSourceUnit(_source);
+	state().prepareForSourceUnit(_source, m_settings.externalCalls.isTrusted());
 
 	return true;
 }

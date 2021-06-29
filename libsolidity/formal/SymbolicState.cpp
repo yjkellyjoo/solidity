@@ -240,7 +240,7 @@ smtutil::Expression SymbolicState::txFunctionConstraints(FunctionDefinition cons
 	return conj;
 }
 
-void SymbolicState::prepareForSourceUnit(SourceUnit const& _source)
+void SymbolicState::prepareForSourceUnit(SourceUnit const& _source, bool _storage)
 {
 	// TODO use IdCompare
 	auto allSources = _source.referencedSourceUnits(true);
@@ -254,7 +254,7 @@ void SymbolicState::prepareForSourceUnit(SourceUnit const& _source)
 			if (auto contract = dynamic_cast<ContractDefinition const*>(node.get()))
 				contracts.insert(contract);
 	}
-	buildStorage(contracts);
+	buildStorage(contracts, _storage);
 	buildABIFunctions(abiCalls);
 }
 
@@ -275,47 +275,58 @@ string SymbolicState::contractSuffix(ContractDefinition const& _contract) const
 	return "_" + _contract.name() + "_" + to_string(_contract.id());
 }
 
-void SymbolicState::buildStorage(set<ContractDefinition const*> const& _contracts)
+void SymbolicState::buildStorage(set<ContractDefinition const*> const& _contracts, bool _allStorages)
 {
-	vector<string> memberNames;
-	vector<SortPointer> memberSorts;
-	// TODO make this loop deterministic by using IdCompare
-	for (auto contract: _contracts)
+	map<string, SortPointer> stateMembers{
+		{"balances", make_shared<smtutil::ArraySort>(smtutil::SortProvider::uintSort, smtutil::SortProvider::uintSort)}
+	};
+
+	if (_allStorages)
 	{
-		string suffix = contractSuffix(*contract);
+		vector<string> memberNames;
+		vector<SortPointer> memberSorts;
+		// TODO make this loop deterministic by using IdCompare
+		for (auto contract: _contracts)
+		{
+			string suffix = contractSuffix(*contract);
 
-		// z3 doesn't like empty tuples, so if the contract has 0
-		// state vars we can't put it there.
-		auto stateVars = SMTEncoder::stateVariablesIncludingInheritedAndPrivate(*contract);
-		if (stateVars.empty())
-			continue;
+			// z3 doesn't like empty tuples, so if the contract has 0
+			// state vars we can't put it there.
+			auto stateVars = SMTEncoder::stateVariablesIncludingInheritedAndPrivate(*contract);
+			if (stateVars.empty())
+				continue;
 
-		auto names = applyMap(stateVars, [&](auto var) {
-			return var->name() + "_" + to_string(var->id()) + suffix;
-		});
-		auto sorts = applyMap(stateVars, [](auto var) { return smtSortAbstractFunction(*var->type()); });
+			auto names = applyMap(stateVars, [&](auto var) {
+				return var->name() + "_" + to_string(var->id()) + suffix;
+			});
+			auto sorts = applyMap(stateVars, [](auto var) { return smtSortAbstractFunction(*var->type()); });
 
-		string name = "storage" + suffix;
-		auto storageTuple = make_shared<smtutil::TupleSort>(
-			name + "_type", names, sorts
+			string name = "storage" + suffix;
+			auto storageTuple = make_shared<smtutil::TupleSort>(
+				name + "_type", names, sorts
+			);
+
+			auto storageSort = make_shared<smtutil::ArraySort>(
+				smtSort(*TypeProvider::address()),
+				storageTuple
+			);
+
+			memberNames.emplace_back(name);
+			memberSorts.emplace_back(storageSort);
+		}
+
+		stateMembers.emplace(
+			"isActive",
+			make_shared<smtutil::ArraySort>(smtSort(*TypeProvider::address()), smtutil::SortProvider::boolSort)
 		);
-
-		auto storageSort = make_shared<smtutil::ArraySort>(
-			smtSort(*TypeProvider::address()),
-			storageTuple
+		stateMembers.emplace(
+			"storage",
+			make_shared<smtutil::TupleSort>(
+				"storage_type", memberNames, memberSorts
+			)
 		);
-
-		memberNames.emplace_back(name);
-		memberSorts.emplace_back(storageSort);
 	}
 
-	map<string, SortPointer> stateMembers{
-		{"balances", make_shared<smtutil::ArraySort>(smtutil::SortProvider::uintSort, smtutil::SortProvider::uintSort)},
-		{"isActive", make_shared<smtutil::ArraySort>(smtSort(*TypeProvider::address()), smtutil::SortProvider::boolSort)},
-		{"storage", make_shared<smtutil::TupleSort>(
-			"storage_type", memberNames, memberSorts
-		)}
-	};
 	m_state = make_unique<BlockchainVariable>(
 		"state",
 		move(stateMembers),
