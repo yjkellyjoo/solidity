@@ -134,35 +134,35 @@ static string const g_strVersion = "version";
 
 static bool needsHumanTargetedStdout(CommandLineOptions const& _options)
 {
-	if (_options.estimateGas)
+	if (_options.compiler.estimateGas)
 		return true;
-	if (!_options.outputDir.empty())
+	if (!_options.output.dir.empty())
 		return false;
 	return
-		_options.selectedOutputs.abi ||
-		_options.selectedOutputs.asm_ ||
-		_options.selectedOutputs.asmJson ||
-		_options.selectedOutputs.binary ||
-		_options.selectedOutputs.binaryRuntime ||
-		_options.selectedOutputs.metadata ||
-		_options.selectedOutputs.natspecUser ||
-		_options.selectedOutputs.natspecDev ||
-		_options.selectedOutputs.opcodes ||
-		_options.selectedOutputs.signatureHashes ||
-		_options.selectedOutputs.storageLayout;
+		_options.compiler.outputs.abi ||
+		_options.compiler.outputs.asm_ ||
+		_options.compiler.outputs.asmJson ||
+		_options.compiler.outputs.binary ||
+		_options.compiler.outputs.binaryRuntime ||
+		_options.compiler.outputs.metadata ||
+		_options.compiler.outputs.natspecUser ||
+		_options.compiler.outputs.natspecDev ||
+		_options.compiler.outputs.opcodes ||
+		_options.compiler.outputs.signatureHashes ||
+		_options.compiler.outputs.storageLayout;
 }
 
 static bool coloredOutput(CommandLineOptions const& _options)
 {
-	return (!_options.coloredOutput.has_value() && isatty(STDERR_FILENO)) ||
-		(_options.coloredOutput.has_value() && _options.coloredOutput.value());
+	return (!_options.formatting.coloredOutput.has_value() && isatty(STDERR_FILENO)) ||
+		(_options.formatting.coloredOutput.has_value() && _options.formatting.coloredOutput.value());
 }
 
 void CommandLineInterface::handleBinary(string const& _contract)
 {
-	if (m_options.selectedOutputs.binary)
+	if (m_options.compiler.outputs.binary)
 	{
-		if (!m_options.outputDir.empty())
+		if (!m_options.output.dir.empty())
 			createFile(m_compiler->filesystemFriendlyName(_contract) + ".bin", objectWithLinkRefsHex(m_compiler->object(_contract)));
 		else
 		{
@@ -170,9 +170,9 @@ void CommandLineInterface::handleBinary(string const& _contract)
 			sout() << objectWithLinkRefsHex(m_compiler->object(_contract)) << endl;
 		}
 	}
-	if (m_options.selectedOutputs.binaryRuntime)
+	if (m_options.compiler.outputs.binaryRuntime)
 	{
-		if (!m_options.outputDir.empty())
+		if (!m_options.output.dir.empty())
 			createFile(m_compiler->filesystemFriendlyName(_contract) + ".bin-runtime", objectWithLinkRefsHex(m_compiler->runtimeObject(_contract)));
 		else
 		{
@@ -184,7 +184,7 @@ void CommandLineInterface::handleBinary(string const& _contract)
 
 void CommandLineInterface::handleOpcode(string const& _contract)
 {
-	if (!m_options.outputDir.empty())
+	if (!m_options.output.dir.empty())
 		createFile(m_compiler->filesystemFriendlyName(_contract) + ".opcode", evmasm::disassemble(m_compiler->object(_contract).bytecode));
 	else
 	{
@@ -196,10 +196,10 @@ void CommandLineInterface::handleOpcode(string const& _contract)
 
 void CommandLineInterface::handleIR(string const& _contractName)
 {
-	if (!m_options.selectedOutputs.ir)
+	if (!m_options.compiler.outputs.ir)
 		return;
 
-	if (!m_options.outputDir.empty())
+	if (!m_options.output.dir.empty())
 		createFile(m_compiler->filesystemFriendlyName(_contractName) + ".yul", m_compiler->yulIR(_contractName));
 	else
 	{
@@ -210,10 +210,10 @@ void CommandLineInterface::handleIR(string const& _contractName)
 
 void CommandLineInterface::handleIROptimized(string const& _contractName)
 {
-	if (!m_options.selectedOutputs.irOptimized)
+	if (!m_options.compiler.outputs.irOptimized)
 		return;
 
-	if (!m_options.outputDir.empty())
+	if (!m_options.output.dir.empty())
 		createFile(m_compiler->filesystemFriendlyName(_contractName) + "_opt.yul", m_compiler->yulIROptimized(_contractName));
 	else
 	{
@@ -224,10 +224,10 @@ void CommandLineInterface::handleIROptimized(string const& _contractName)
 
 void CommandLineInterface::handleEwasm(string const& _contractName)
 {
-	if (!m_options.selectedOutputs.ewasm)
+	if (!m_options.compiler.outputs.ewasm)
 		return;
 
-	if (!m_options.outputDir.empty())
+	if (!m_options.output.dir.empty())
 	{
 		createFile(m_compiler->filesystemFriendlyName(_contractName) + ".wast", m_compiler->ewasm(_contractName));
 		createFile(
@@ -245,15 +245,15 @@ void CommandLineInterface::handleEwasm(string const& _contractName)
 
 void CommandLineInterface::handleBytecode(string const& _contract)
 {
-	if (m_options.selectedOutputs.opcodes)
+	if (m_options.compiler.outputs.opcodes)
 		handleOpcode(_contract);
-	if (m_options.selectedOutputs.binary || m_options.selectedOutputs.binaryRuntime)
+	if (m_options.compiler.outputs.binary || m_options.compiler.outputs.binaryRuntime)
 		handleBinary(_contract);
 }
 
 void CommandLineInterface::handleSignatureHashes(string const& _contract)
 {
-	if (!m_options.selectedOutputs.signatureHashes)
+	if (!m_options.compiler.outputs.signatureHashes)
 		return;
 
 	Json::Value methodIdentifiers = m_compiler->methodIdentifiers(_contract);
@@ -261,7 +261,7 @@ void CommandLineInterface::handleSignatureHashes(string const& _contract)
 	for (auto const& name: methodIdentifiers.getMemberNames())
 		out += methodIdentifiers[name].asString() + ": " + name + "\n";
 
-	if (!m_options.outputDir.empty())
+	if (!m_options.output.dir.empty())
 		createFile(m_compiler->filesystemFriendlyName(_contract) + ".signatures", out);
 	else
 		sout() << "Function signatures:" << endl << out;
@@ -269,11 +269,11 @@ void CommandLineInterface::handleSignatureHashes(string const& _contract)
 
 void CommandLineInterface::handleMetadata(string const& _contract)
 {
-	if (!m_options.selectedOutputs.metadata)
+	if (!m_options.compiler.outputs.metadata)
 		return;
 
 	string data = m_compiler->metadata(_contract);
-	if (!m_options.outputDir.empty())
+	if (!m_options.output.dir.empty())
 		createFile(m_compiler->filesystemFriendlyName(_contract) + "_meta.json", data);
 	else
 		sout() << "Metadata:" << endl << data << endl;
@@ -281,11 +281,11 @@ void CommandLineInterface::handleMetadata(string const& _contract)
 
 void CommandLineInterface::handleABI(string const& _contract)
 {
-	if (!m_options.selectedOutputs.abi)
+	if (!m_options.compiler.outputs.abi)
 		return;
 
 	string data = jsonCompactPrint(removeNullMembers(m_compiler->contractABI(_contract)));
-	if (!m_options.outputDir.empty())
+	if (!m_options.output.dir.empty())
 		createFile(m_compiler->filesystemFriendlyName(_contract) + ".abi", data);
 	else
 		sout() << "Contract JSON ABI" << endl << data << endl;
@@ -293,11 +293,11 @@ void CommandLineInterface::handleABI(string const& _contract)
 
 void CommandLineInterface::handleStorageLayout(string const& _contract)
 {
-	if (!m_options.selectedOutputs.storageLayout)
+	if (!m_options.compiler.outputs.storageLayout)
 		return;
 
 	string data = jsonCompactPrint(removeNullMembers(m_compiler->storageLayout(_contract)));
-	if (!m_options.outputDir.empty())
+	if (!m_options.output.dir.empty())
 		createFile(m_compiler->filesystemFriendlyName(_contract) + "_storage.json", data);
 	else
 		sout() << "Contract Storage Layout:" << endl << data << endl;
@@ -311,13 +311,13 @@ void CommandLineInterface::handleNatspec(bool _natspecDev, string const& _contra
 
 	if (_natspecDev)
 	{
-		enabled = m_options.selectedOutputs.natspecDev;
+		enabled = m_options.compiler.outputs.natspecDev;
 		suffix = ".docdev";
 		title = "Developer Documentation";
 	}
 	else
 	{
-		enabled = m_options.selectedOutputs.natspecUser;
+		enabled = m_options.compiler.outputs.natspecUser;
 		suffix = ".docuser";
 		title = "User Documentation";
 	}
@@ -332,7 +332,7 @@ void CommandLineInterface::handleNatspec(bool _natspecDev, string const& _contra
 			)
 		);
 
-		if (!m_options.outputDir.empty())
+		if (!m_options.output.dir.empty())
 			createFile(m_compiler->filesystemFriendlyName(_contract) + suffix, output);
 		else
 		{
@@ -385,14 +385,14 @@ void CommandLineInterface::handleGasEstimation(string const& _contract)
 
 bool CommandLineInterface::readInputFilesAndConfigureFileReader()
 {
-	for (boost::filesystem::path const& allowedDirectory: m_options.allowedDirectories)
+	for (boost::filesystem::path const& allowedDirectory: m_options.input.allowedDirectories)
 		m_fileReader.allowDirectory(allowedDirectory);
 
-	for (boost::filesystem::path const& infile: m_options.sourceFilePaths)
+	for (boost::filesystem::path const& infile: m_options.input.paths)
 	{
 		if (!boost::filesystem::exists(infile))
 		{
-			if (!m_options.ignoreMissingInputFiles)
+			if (!m_options.input.ignoreMissingFiles)
 			{
 				serr() << infile << " is not found." << endl;
 				return false;
@@ -405,7 +405,7 @@ bool CommandLineInterface::readInputFilesAndConfigureFileReader()
 
 		if (!boost::filesystem::is_regular_file(infile))
 		{
-			if (!m_options.ignoreMissingInputFiles)
+			if (!m_options.input.ignoreMissingFiles)
 			{
 				serr() << infile << " is not a valid file." << endl;
 				return false;
@@ -421,7 +421,7 @@ bool CommandLineInterface::readInputFilesAndConfigureFileReader()
 		m_fileReader.allowDirectory(boost::filesystem::path(boost::filesystem::canonical(infile).string()).remove_filename());
 	}
 
-	if (m_options.addStdin)
+	if (m_options.input.addStdin)
 		m_fileReader.setSource(g_stdinFileName, readStandardInput());
 
 	if (m_fileReader.sourceCodes().size() == 0)
@@ -465,15 +465,15 @@ void CommandLineInterface::createFile(string const& _fileName, string const& _da
 {
 	namespace fs = boost::filesystem;
 
-	solAssert(!m_options.outputDir.empty(), "");
+	solAssert(!m_options.output.dir.empty(), "");
 
 	// NOTE: create_directories() raises an exception if the path consists solely of '.' or '..'
 	// (or equivalent such as './././.'). Paths like 'a/b/.' and 'a/b/..' are fine though.
 	// The simplest workaround is to use an absolute path.
-	fs::create_directories(fs::absolute(m_options.outputDir));
+	fs::create_directories(fs::absolute(m_options.output.dir));
 
-	string pathName = (m_options.outputDir / _fileName).string();
-	if (fs::exists(pathName) && !m_options.overwriteFiles)
+	string pathName = (m_options.output.dir / _fileName).string();
+	if (fs::exists(pathName) && !m_options.output.overwriteFiles)
 	{
 		serr() << "Refusing to overwrite existing file \"" << pathName << "\" (use --overwrite to force)." << endl;
 		m_error = true;
@@ -508,28 +508,28 @@ bool CommandLineInterface::parseArguments(int _argc, char const* const* _argv)
 
 bool CommandLineInterface::processInput()
 {
-	m_fileReader.setBasePath(m_options.basePath);
+	m_fileReader.setBasePath(m_options.input.basePath);
 
-	if (m_options.basePath != "" && !boost::filesystem::is_directory(m_options.basePath))
+	if (m_options.input.basePath != "" && !boost::filesystem::is_directory(m_options.input.basePath))
 	{
-		serr() << "Base path must be a directory: \"" << m_options.basePath << "\"\n";
+		serr() << "Base path must be a directory: \"" << m_options.input.basePath << "\"\n";
 		return false;
 	}
 
-	if (m_options.inputMode == InputMode::StandardJson)
+	if (m_options.input.mode == InputMode::StandardJson)
 	{
 		string input;
-		if (m_options.standardJsonInputFile.empty())
+		if (m_options.input.standardJsonFile.empty())
 			input = readStandardInput();
 		else
 		{
 			try
 			{
-				input = readFileAsString(m_options.standardJsonInputFile);
+				input = readFileAsString(m_options.input.standardJsonFile);
 			}
 			catch (FileNotFound const&)
 			{
-				serr() << "File not found: " << m_options.standardJsonInputFile << endl;
+				serr() << "File not found: " << m_options.input.standardJsonFile << endl;
 				return false;
 			}
 		}
@@ -541,57 +541,57 @@ bool CommandLineInterface::processInput()
 	if (!readInputFilesAndConfigureFileReader())
 		return false;
 
-	if (m_options.inputMode == InputMode::Assembler)
+	if (m_options.input.mode == InputMode::Assembler)
 		return assemble(
-			m_options.inputAssemblyLanguage,
-			m_options.targetMachine,
-			m_options.optimize,
-			m_options.yulOptimiserSteps
+			m_options.assembly.inputLanguage,
+			m_options.assembly.targetMachine,
+			m_options.optimizer.enabled,
+			m_options.optimizer.yulSteps
 		);
 
-	if (m_options.inputMode == InputMode::Linker)
+	if (m_options.input.mode == InputMode::Linker)
 		return link();
 
-	solAssert(m_options.inputMode == InputMode::Compiler || m_options.inputMode == InputMode::CompilerWithASTImport, "");
+	solAssert(m_options.input.mode == InputMode::Compiler || m_options.input.mode == InputMode::CompilerWithASTImport, "");
 	return compile();
 }
 
 bool CommandLineInterface::compile()
 {
-	solAssert(m_options.inputMode == InputMode::Compiler || m_options.inputMode == InputMode::CompilerWithASTImport, "");
+	solAssert(m_options.input.mode == InputMode::Compiler || m_options.input.mode == InputMode::CompilerWithASTImport, "");
 
 	m_compiler = make_unique<CompilerStack>(m_fileReader.reader());
 
-	SourceReferenceFormatter formatter(serr(false), coloredOutput(m_options), m_options.withErrorIds);
+	SourceReferenceFormatter formatter(serr(false), coloredOutput(m_options), m_options.formatting.withErrorIds);
 
 	try
 	{
-		if (m_options.metadataLiteral)
+		if (m_options.metadata.literalSources)
 			m_compiler->useMetadataLiteralSources(true);
-		m_compiler->setMetadataHash(m_options.metadataHash);
-		if (m_options.initializeModelChecker)
-			m_compiler->setModelCheckerSettings(m_options.modelCheckerSettings);
-		m_compiler->setRemappings(m_options.remappings);
-		m_compiler->setLibraries(m_options.libraries);
-		m_compiler->setViaIR(m_options.experimentalViaIR);
-		m_compiler->setEVMVersion(m_options.evmVersion);
-		m_compiler->setRevertStringBehaviour(m_options.revertStrings);
+		m_compiler->setMetadataHash(m_options.metadata.hash);
+		if (m_options.modelChecker.initialize)
+			m_compiler->setModelCheckerSettings(m_options.modelChecker.settings);
+		m_compiler->setRemappings(m_options.input.remappings);
+		m_compiler->setLibraries(m_options.linker.libraries);
+		m_compiler->setViaIR(m_options.output.experimentalViaIR);
+		m_compiler->setEVMVersion(m_options.output.evmVersion);
+		m_compiler->setRevertStringBehaviour(m_options.output.revertStrings);
 		// TODO: Perhaps we should not compile unless requested
 
-		m_compiler->enableIRGeneration(m_options.selectedOutputs.ir || m_options.selectedOutputs.irOptimized);
-		m_compiler->enableEwasmGeneration(m_options.selectedOutputs.ewasm);
+		m_compiler->enableIRGeneration(m_options.compiler.outputs.ir || m_options.compiler.outputs.irOptimized);
+		m_compiler->enableEwasmGeneration(m_options.compiler.outputs.ewasm);
 
-		OptimiserSettings settings = m_options.optimize ? OptimiserSettings::standard() : OptimiserSettings::minimal();
-		settings.expectedExecutionsPerDeployment = m_options.expectedExecutionsPerDeployment;
-		if (m_options.noOptimizeYul)
+		OptimiserSettings settings = m_options.optimizer.enabled ? OptimiserSettings::standard() : OptimiserSettings::minimal();
+		settings.expectedExecutionsPerDeployment = m_options.optimizer.expectedExecutionsPerDeployment;
+		if (m_options.optimizer.noOptimizeYul)
 			settings.runYulOptimiser = false;
 
-		if (m_options.yulOptimiserSteps.has_value())
-			settings.yulOptimiserSteps = m_options.yulOptimiserSteps.value();
+		if (m_options.optimizer.yulSteps.has_value())
+			settings.yulOptimiserSteps = m_options.optimizer.yulSteps.value();
 		settings.optimizeStackAllocation = settings.runYulOptimiser;
 		m_compiler->setOptimiserSettings(settings);
 
-		if (m_options.inputMode == InputMode::CompilerWithASTImport)
+		if (m_options.input.mode == InputMode::CompilerWithASTImport)
 		{
 			try
 			{
@@ -613,11 +613,11 @@ bool CommandLineInterface::compile()
 		else
 		{
 			m_compiler->setSources(m_fileReader.sourceCodes());
-			if (m_options.errorRecovery)
+			if (m_options.input.errorRecovery)
 				m_compiler->setParserErrorRecovery(true);
 		}
 
-		bool successful = m_compiler->compile(m_options.stopAfter);
+		bool successful = m_compiler->compile(m_options.output.stopAfter);
 
 		for (auto const& error: m_compiler->errors())
 		{
@@ -626,7 +626,7 @@ bool CommandLineInterface::compile()
 		}
 
 		if (!successful)
-			return m_options.errorRecovery;
+			return m_options.input.errorRecovery;
 	}
 	catch (CompilerError const& _exception)
 	{
@@ -693,7 +693,7 @@ bool CommandLineInterface::compile()
 
 void CommandLineInterface::handleCombinedJSON()
 {
-	if (!m_options.combinedJsonRequests.has_value())
+	if (!m_options.compiler.combinedJsonRequests.has_value())
 		return;
 
 	Json::Value output(Json::objectValue);
@@ -706,54 +706,54 @@ void CommandLineInterface::handleCombinedJSON()
 	for (string const& contractName: contracts)
 	{
 		Json::Value& contractData = output[g_strContracts][contractName] = Json::objectValue;
-		if (m_options.combinedJsonRequests->abi)
+		if (m_options.compiler.combinedJsonRequests->abi)
 			contractData[g_strAbi] = m_compiler->contractABI(contractName);
-		if (m_options.combinedJsonRequests->metadata)
+		if (m_options.compiler.combinedJsonRequests->metadata)
 			contractData["metadata"] = m_compiler->metadata(contractName);
-		if (m_options.combinedJsonRequests->binary && m_compiler->compilationSuccessful())
+		if (m_options.compiler.combinedJsonRequests->binary && m_compiler->compilationSuccessful())
 			contractData[g_strBinary] = m_compiler->object(contractName).toHex();
-		if (m_options.combinedJsonRequests->binaryRuntime && m_compiler->compilationSuccessful())
+		if (m_options.compiler.combinedJsonRequests->binaryRuntime && m_compiler->compilationSuccessful())
 			contractData[g_strBinaryRuntime] = m_compiler->runtimeObject(contractName).toHex();
-		if (m_options.combinedJsonRequests->opcodes && m_compiler->compilationSuccessful())
+		if (m_options.compiler.combinedJsonRequests->opcodes && m_compiler->compilationSuccessful())
 			contractData[g_strOpcodes] = evmasm::disassemble(m_compiler->object(contractName).bytecode);
-		if (m_options.combinedJsonRequests->asm_ && m_compiler->compilationSuccessful())
+		if (m_options.compiler.combinedJsonRequests->asm_ && m_compiler->compilationSuccessful())
 			contractData[g_strAsm] = m_compiler->assemblyJSON(contractName);
-		if (m_options.combinedJsonRequests->storageLayout && m_compiler->compilationSuccessful())
+		if (m_options.compiler.combinedJsonRequests->storageLayout && m_compiler->compilationSuccessful())
 			contractData[g_strStorageLayout] = m_compiler->storageLayout(contractName);
-		if (m_options.combinedJsonRequests->generatedSources && m_compiler->compilationSuccessful())
+		if (m_options.compiler.combinedJsonRequests->generatedSources && m_compiler->compilationSuccessful())
 			contractData[g_strGeneratedSources] = m_compiler->generatedSources(contractName, false);
-		if (m_options.combinedJsonRequests->generatedSourcesRuntime && m_compiler->compilationSuccessful())
+		if (m_options.compiler.combinedJsonRequests->generatedSourcesRuntime && m_compiler->compilationSuccessful())
 			contractData[g_strGeneratedSourcesRuntime] = m_compiler->generatedSources(contractName, true);
-		if (m_options.combinedJsonRequests->srcMap && m_compiler->compilationSuccessful())
+		if (m_options.compiler.combinedJsonRequests->srcMap && m_compiler->compilationSuccessful())
 		{
 			auto map = m_compiler->sourceMapping(contractName);
 			contractData[g_strSrcMap] = map ? *map : "";
 		}
-		if (m_options.combinedJsonRequests->srcMapRuntime && m_compiler->compilationSuccessful())
+		if (m_options.compiler.combinedJsonRequests->srcMapRuntime && m_compiler->compilationSuccessful())
 		{
 			auto map = m_compiler->runtimeSourceMapping(contractName);
 			contractData[g_strSrcMapRuntime] = map ? *map : "";
 		}
-		if (m_options.combinedJsonRequests->funDebug && m_compiler->compilationSuccessful())
+		if (m_options.compiler.combinedJsonRequests->funDebug && m_compiler->compilationSuccessful())
 			contractData[g_strFunDebug] = StandardCompiler::formatFunctionDebugData(
 				m_compiler->object(contractName).functionDebugData
 			);
-		if (m_options.combinedJsonRequests->funDebugRuntime && m_compiler->compilationSuccessful())
+		if (m_options.compiler.combinedJsonRequests->funDebugRuntime && m_compiler->compilationSuccessful())
 			contractData[g_strFunDebugRuntime] = StandardCompiler::formatFunctionDebugData(
 				m_compiler->runtimeObject(contractName).functionDebugData
 			);
-		if (m_options.combinedJsonRequests->signatureHashes)
+		if (m_options.compiler.combinedJsonRequests->signatureHashes)
 			contractData[g_strSignatureHashes] = m_compiler->methodIdentifiers(contractName);
-		if (m_options.combinedJsonRequests->natspecDev)
+		if (m_options.compiler.combinedJsonRequests->natspecDev)
 			contractData[g_strNatspecDev] = m_compiler->natspecDev(contractName);
-		if (m_options.combinedJsonRequests->natspecUser)
+		if (m_options.compiler.combinedJsonRequests->natspecUser)
 			contractData[g_strNatspecUser] = m_compiler->natspecUser(contractName);
 	}
 
 	bool needsSourceList =
-		m_options.combinedJsonRequests->ast ||
-		m_options.combinedJsonRequests->srcMap ||
-		m_options.combinedJsonRequests->srcMapRuntime;
+		m_options.compiler.combinedJsonRequests->ast ||
+		m_options.compiler.combinedJsonRequests->srcMap ||
+		m_options.compiler.combinedJsonRequests->srcMapRuntime;
 	if (needsSourceList)
 	{
 		// Indices into this array are used to abbreviate source names in source locations.
@@ -763,7 +763,7 @@ void CommandLineInterface::handleCombinedJSON()
 			output[g_strSourceList].append(source);
 	}
 
-	if (m_options.combinedJsonRequests->ast)
+	if (m_options.compiler.combinedJsonRequests->ast)
 	{
 		output[g_strSources] = Json::Value(Json::objectValue);
 		for (auto const& sourceCode: m_fileReader.sourceCodes())
@@ -774,10 +774,10 @@ void CommandLineInterface::handleCombinedJSON()
 		}
 	}
 
-	string json = m_options.prettyJson ? jsonPrettyPrint(removeNullMembers(std::move(output))) :
+	string json = m_options.formatting.prettyJson ? jsonPrettyPrint(removeNullMembers(std::move(output))) :
 		jsonCompactPrint(removeNullMembers(std::move(output)));
 
-	if (!m_options.outputDir.empty())
+	if (!m_options.output.dir.empty())
 		createJson("combined", json);
 	else
 		sout() << json << endl;
@@ -785,14 +785,14 @@ void CommandLineInterface::handleCombinedJSON()
 
 void CommandLineInterface::handleAst()
 {
-	if (!m_options.selectedOutputs.astCompactJson)
+	if (!m_options.compiler.outputs.astCompactJson)
 		return;
 
 	vector<ASTNode const*> asts;
 	for (auto const& sourceCode: m_fileReader.sourceCodes())
 		asts.push_back(&m_compiler->ast(sourceCode.first));
 
-	if (!m_options.outputDir.empty())
+	if (!m_options.output.dir.empty())
 	{
 		for (auto const& sourceCode: m_fileReader.sourceCodes())
 		{
@@ -817,14 +817,14 @@ void CommandLineInterface::handleAst()
 
 bool CommandLineInterface::actOnInput()
 {
-	if (m_options.inputMode == InputMode::StandardJson || m_options.inputMode == InputMode::Assembler)
+	if (m_options.input.mode == InputMode::StandardJson || m_options.input.mode == InputMode::Assembler)
 		// Already done in "processInput" phase.
 		return true;
-	else if (m_options.inputMode == InputMode::Linker)
+	else if (m_options.input.mode == InputMode::Linker)
 		writeLinkedFiles();
 	else
 	{
-		solAssert(m_options.inputMode == InputMode::Compiler || m_options.inputMode == InputMode::CompilerWithASTImport, "");
+		solAssert(m_options.input.mode == InputMode::Compiler || m_options.input.mode == InputMode::CompilerWithASTImport, "");
 		outputCompilationResults();
 	}
 	return !m_error;
@@ -835,7 +835,7 @@ bool CommandLineInterface::link()
 	// Map from how the libraries will be named inside the bytecode to their addresses.
 	map<string, h160> librariesReplacements;
 	int const placeholderSize = 40; // 20 bytes or 40 hex characters
-	for (auto const& library: m_options.libraries)
+	for (auto const& library: m_options.linker.libraries)
 	{
 		string const& name = library.first;
 		// Library placeholders are 40 hex digits (20 bytes) that start and end with '__'.
@@ -883,7 +883,7 @@ bool CommandLineInterface::link()
 			it += placeholderSize;
 		}
 		// Remove hints for resolved libraries.
-		for (auto const& library: m_options.libraries)
+		for (auto const& library: m_options.linker.libraries)
 			boost::algorithm::erase_all(src.second, "\n" + libraryPlaceholderHint(library.first));
 		while (!src.second.empty() && *prev(src.second.end()) == '\n')
 			src.second.resize(src.second.size() - 1);
@@ -945,7 +945,7 @@ bool CommandLineInterface::assemble(
 		if (_yulOptimiserSteps.has_value())
 			settings.yulOptimiserSteps = _yulOptimiserSteps.value();
 
-		auto& stack = assemblyStacks[src.first] = yul::AssemblyStack(m_options.evmVersion, _language, settings);
+		auto& stack = assemblyStacks[src.first] = yul::AssemblyStack(m_options.output.evmVersion, _language, settings);
 		try
 		{
 			if (!stack.parseAndAnalyze(src.first, src.second))
@@ -976,7 +976,7 @@ bool CommandLineInterface::assemble(
 	for (auto const& sourceAndStack: assemblyStacks)
 	{
 		auto const& stack = sourceAndStack.second;
-		SourceReferenceFormatter formatter(serr(false), coloredOutput(m_options), m_options.withErrorIds);
+		SourceReferenceFormatter formatter(serr(false), coloredOutput(m_options), m_options.formatting.withErrorIds);
 
 		for (auto const& error: stack.errors())
 		{
@@ -1037,7 +1037,7 @@ bool CommandLineInterface::assemble(
 		try
 		{
 			object = stack.assemble(_targetMachine);
-			object.bytecode->link(m_options.libraries);
+			object.bytecode->link(m_options.linker.libraries);
 		}
 		catch (Exception const& _exception)
 		{
@@ -1082,7 +1082,7 @@ void CommandLineInterface::outputCompilationResults()
 
 	if (
 		!m_compiler->compilationSuccessful() &&
-		m_options.stopAfter == CompilerStack::State::CompilationSuccessful
+		m_options.output.stopAfter == CompilerStack::State::CompilationSuccessful
 	)
 	{
 		serr() << endl << "Compilation halted after AST generation due to errors." << endl;
@@ -1096,17 +1096,17 @@ void CommandLineInterface::outputCompilationResults()
 			sout() << endl << "======= " << contract << " =======" << endl;
 
 		// do we need EVM assembly?
-		if (m_options.selectedOutputs.asm_ || m_options.selectedOutputs.asmJson)
+		if (m_options.compiler.outputs.asm_ || m_options.compiler.outputs.asmJson)
 		{
 			string ret;
-			if (m_options.selectedOutputs.asmJson)
+			if (m_options.compiler.outputs.asmJson)
 				ret = jsonPrettyPrint(removeNullMembers(m_compiler->assemblyJSON(contract)));
 			else
 				ret = m_compiler->assemblyString(contract, m_fileReader.sourceCodes());
 
-			if (!m_options.outputDir.empty())
+			if (!m_options.output.dir.empty())
 			{
-				createFile(m_compiler->filesystemFriendlyName(contract) + (m_options.selectedOutputs.asmJson ? "_evm.json" : ".evm"), ret);
+				createFile(m_compiler->filesystemFriendlyName(contract) + (m_options.compiler.outputs.asmJson ? "_evm.json" : ".evm"), ret);
 			}
 			else
 			{
@@ -1114,7 +1114,7 @@ void CommandLineInterface::outputCompilationResults()
 			}
 		}
 
-		if (m_options.estimateGas)
+		if (m_options.compiler.estimateGas)
 			handleGasEstimation(contract);
 
 		handleBytecode(contract);
@@ -1131,8 +1131,8 @@ void CommandLineInterface::outputCompilationResults()
 
 	if (!g_hasOutput)
 	{
-		if (!m_options.outputDir.empty())
-			sout() << "Compiler run successful. Artifact(s) can be found in directory " << m_options.outputDir << "." << endl;
+		if (!m_options.output.dir.empty())
+			sout() << "Compiler run successful. Artifact(s) can be found in directory " << m_options.output.dir << "." << endl;
 		else
 			serr() << "Compiler run successful, no output requested." << endl;
 	}
