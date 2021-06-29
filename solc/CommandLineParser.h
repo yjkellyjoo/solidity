@@ -91,59 +91,73 @@ struct CombinedJsonRequests
 
 struct CommandLineOptions
 {
-	// Input Options
-	std::set<boost::filesystem::path> sourceFilePaths;
-	std::string standardJsonInputFile;
-	std::vector<ImportRemapper::Remapping> remappings;
-	bool addStdin = false;
-	boost::filesystem::path basePath = "";
-	FileReader::FileSystemPathSet allowedDirectories;
-	bool ignoreMissingInputFiles = false;
-	bool errorRecovery = false;
+	struct
+	{
+		InputMode mode = InputMode::Compiler;
+		std::set<boost::filesystem::path> paths;
+		std::string standardJsonFile;
+		std::vector<ImportRemapper::Remapping> remappings;
+		bool addStdin = false;
+		boost::filesystem::path basePath = "";
+		FileReader::FileSystemPathSet allowedDirectories;
+		bool ignoreMissingFiles = false;
+		bool errorRecovery = false;
+	} input;
 
-	// Output Options
-	boost::filesystem::path outputDir;
-	bool overwriteFiles = false;
-	langutil::EVMVersion evmVersion;
-	bool experimentalViaIR = false;
-	RevertStrings revertStrings = RevertStrings::Default;
-	CompilerStack::State stopAfter = CompilerStack::State::CompilationSuccessful;
+	struct
+	{
+		boost::filesystem::path dir;
+		bool overwriteFiles = false;
+		langutil::EVMVersion evmVersion;
+		bool experimentalViaIR = false;
+		RevertStrings revertStrings = RevertStrings::Default;
+		CompilerStack::State stopAfter = CompilerStack::State::CompilationSuccessful;
+	} output;
 
-	// Alternative Input Modes
-	InputMode inputMode = InputMode::Compiler;
+	struct
+	{
+		yul::AssemblyStack::Machine targetMachine = yul::AssemblyStack::Machine::EVM;
+		yul::AssemblyStack::Language inputLanguage = yul::AssemblyStack::Language::StrictAssembly;
+	} assembly;
 
-	// Assembly Mode Options
-	yul::AssemblyStack::Machine targetMachine = yul::AssemblyStack::Machine::EVM;
-	yul::AssemblyStack::Language inputAssemblyLanguage = yul::AssemblyStack::Language::StrictAssembly;
+	struct
+	{
+		std::map<std::string, util::h160> libraries; // library name -> address
+	} linker;
 
-	// Linker Mode Options
-	std::map<std::string, util::h160> libraries; // library name -> address
+	struct
+	{
+		bool prettyJson = false;
+		std::optional<bool> coloredOutput;
+		bool withErrorIds = false;
+	} formatting;
 
-	// Output Formatting
-	bool prettyJson = false;
-	std::optional<bool> coloredOutput;
-	bool withErrorIds = false;
+	struct
+	{
+		OutputSelection outputs;
+		bool estimateGas = false;
+		std::optional<CombinedJsonRequests> combinedJsonRequests;
+	} compiler;
 
-	// Output Components
-	OutputSelection selectedOutputs;
+	struct
+	{
+		CompilerStack::MetadataHash hash = CompilerStack::MetadataHash::IPFS;
+		bool literalSources = false;
+	} metadata;
 
-	// Extra Output
-	bool estimateGas = false;
-	std::optional<CombinedJsonRequests> combinedJsonRequests;
+	struct
+	{
+		bool enabled = false;
+		unsigned expectedExecutionsPerDeployment = 0;
+		bool noOptimizeYul = false;
+		std::optional<std::string> yulSteps;
+	} optimizer;
 
-	// Metadata Options
-	CompilerStack::MetadataHash metadataHash = CompilerStack::MetadataHash::IPFS;
-	bool metadataLiteral = false;
-
-	// Optimizer Options
-	bool optimize = false;
-	unsigned expectedExecutionsPerDeployment = 0;
-	bool noOptimizeYul = false;
-	std::optional<std::string> yulOptimiserSteps;
-
-	// Model Checker Options
-	bool initializeModelChecker = false;
-	ModelCheckerSettings modelCheckerSettings;
+	struct
+	{
+		bool initialize = false;
+		ModelCheckerSettings settings;
+	} modelChecker;
 };
 
 /// Parses the command-line arguments and produces a filled-out CommandLineOptions structure.

@@ -272,7 +272,7 @@ bool checkMutuallyExclusive(boost::program_options::variables_map const& args, s
 
 bool CommandLineParser::parseInputPathsAndRemappings()
 {
-	m_options.ignoreMissingInputFiles = (m_args.count(g_argIgnoreMissingFiles) > 0);
+	m_options.input.ignoreMissingFiles = (m_args.count(g_argIgnoreMissingFiles) > 0);
 	if (m_args.count(g_argInputFile))
 		for (string path: m_args[g_argInputFile].as<vector<string>>())
 		{
@@ -280,7 +280,7 @@ bool CommandLineParser::parseInputPathsAndRemappings()
 			if (eq != path.end())
 			{
 				if (auto r = ImportRemapper::parseRemapping(path))
-					m_options.remappings.emplace_back(std::move(*r));
+					m_options.input.remappings.emplace_back(std::move(*r));
 				else
 				{
 					serr() << "Invalid remapping: \"" << path << "\"." << endl;
@@ -288,12 +288,12 @@ bool CommandLineParser::parseInputPathsAndRemappings()
 				}
 
 				string remappingTarget(eq + 1, path.end());
-				m_options.allowedDirectories.insert(boost::filesystem::path(remappingTarget).remove_filename());
+				m_options.input.allowedDirectories.insert(boost::filesystem::path(remappingTarget).remove_filename());
 			}
 			else if (path == "-")
-				m_options.addStdin = true;
+				m_options.input.addStdin = true;
 			else
-				m_options.sourceFilePaths.insert(path);
+				m_options.input.paths.insert(path);
 		}
 
 	return true;
@@ -350,7 +350,7 @@ bool CommandLineParser::parseLibraryOption(string const& _input)
 
 			string libName(lib.begin(), lib.begin() + static_cast<ptrdiff_t>(separator));
 			boost::trim(libName);
-			if (m_options.libraries.count(libName))
+			if (m_options.linker.libraries.count(libName))
 			{
 				serr() << "Address specified more than once for library \"" << libName << "\"." << endl;
 				return false;
@@ -392,7 +392,7 @@ bool CommandLineParser::parseLibraryOption(string const& _input)
 				serr() << "Invalid address for library \"" << libName << "\": " << addrString << endl;
 				return false;
 			}
-			m_options.libraries[libName] = address;
+			m_options.linker.libraries[libName] = address;
 		}
 
 	return true;
@@ -719,13 +719,13 @@ General Information)").c_str(),
 			return false;
 
 	if (m_args.count(g_argColor) > 0)
-		m_options.coloredOutput = true;
+		m_options.formatting.coloredOutput = true;
 	else if (m_args.count(g_argNoColor) > 0)
-		m_options.coloredOutput = false;
+		m_options.formatting.coloredOutput = false;
 	else
-		solAssert(!m_options.coloredOutput.has_value(), "");
+		solAssert(!m_options.formatting.coloredOutput.has_value(), "");
 
-	m_options.withErrorIds = m_args.count(g_argErrorIds);
+	m_options.formatting.withErrorIds = m_args.count(g_argErrorIds);
 
 	if (m_args.count(g_argHelp) || (interactiveTerminal && _argc == 1))
 	{
@@ -753,44 +753,44 @@ General Information)").c_str(),
 			serr() << "Only \"default\", \"strip\" and \"debug\" are implemented for --" << g_strRevertStrings << " for now." << endl;
 			return false;
 		}
-		m_options.revertStrings = *revertStrings;
+		m_options.output.revertStrings = *revertStrings;
 	}
 
 	if (!parseCombinedJsonOption())
 		return false;
 
 	if (m_args.count(g_argOutputDir))
-		m_options.outputDir = m_args.at(g_argOutputDir).as<string>();
+		m_options.output.dir = m_args.at(g_argOutputDir).as<string>();
 
-	m_options.overwriteFiles = (m_args.count(g_strOverwrite) > 0);
-	m_options.prettyJson = (m_args.count(g_argPrettyJson) > 0);
+	m_options.output.overwriteFiles = (m_args.count(g_strOverwrite) > 0);
+	m_options.formatting.prettyJson = (m_args.count(g_argPrettyJson) > 0);
 
 	static_assert(
-		sizeof(m_options.selectedOutputs) == 15 * sizeof(bool),
+		sizeof(m_options.compiler.selectedOutputs) == 15 * sizeof(bool),
 		"Remember to update code below if you add/remove fields."
 	);
-	m_options.selectedOutputs.astCompactJson = (m_args.count(g_argAstCompactJson) > 0);
-	m_options.selectedOutputs.asm_ = (m_args.count(g_argAsm) > 0);
-	m_options.selectedOutputs.asmJson = (m_args.count(g_argAsmJson) > 0);
-	m_options.selectedOutputs.opcodes = (m_args.count(g_argOpcodes) > 0);
-	m_options.selectedOutputs.binary = (m_args.count(g_argBinary) > 0);
-	m_options.selectedOutputs.binaryRuntime = (m_args.count(g_argBinaryRuntime) > 0);
-	m_options.selectedOutputs.abi = (m_args.count(g_argAbi) > 0);
-	m_options.selectedOutputs.ir = (m_args.count(g_argIR) > 0);
-	m_options.selectedOutputs.irOptimized = (m_args.count(g_argIROptimized) > 0);
-	m_options.selectedOutputs.ewasm = (m_args.count(g_argEwasm) > 0);
-	m_options.selectedOutputs.signatureHashes = (m_args.count(g_argSignatureHashes) > 0);
-	m_options.selectedOutputs.natspecUser = (m_args.count(g_argNatspecUser) > 0);
-	m_options.selectedOutputs.natspecDev = (m_args.count(g_argNatspecDev) > 0);
-	m_options.selectedOutputs.metadata = (m_args.count(g_argMetadata) > 0);
-	m_options.selectedOutputs.storageLayout = (m_args.count(g_argStorageLayout) > 0);
+	m_options.compiler.outputs.astCompactJson = (m_args.count(g_argAstCompactJson) > 0);
+	m_options.compiler.outputs.asm_ = (m_args.count(g_argAsm) > 0);
+	m_options.compiler.outputs.asmJson = (m_args.count(g_argAsmJson) > 0);
+	m_options.compiler.outputs.opcodes = (m_args.count(g_argOpcodes) > 0);
+	m_options.compiler.outputs.binary = (m_args.count(g_argBinary) > 0);
+	m_options.compiler.outputs.binaryRuntime = (m_args.count(g_argBinaryRuntime) > 0);
+	m_options.compiler.outputs.abi = (m_args.count(g_argAbi) > 0);
+	m_options.compiler.outputs.ir = (m_args.count(g_argIR) > 0);
+	m_options.compiler.outputs.irOptimized = (m_args.count(g_argIROptimized) > 0);
+	m_options.compiler.outputs.ewasm = (m_args.count(g_argEwasm) > 0);
+	m_options.compiler.outputs.signatureHashes = (m_args.count(g_argSignatureHashes) > 0);
+	m_options.compiler.outputs.natspecUser = (m_args.count(g_argNatspecUser) > 0);
+	m_options.compiler.outputs.natspecDev = (m_args.count(g_argNatspecDev) > 0);
+	m_options.compiler.outputs.metadata = (m_args.count(g_argMetadata) > 0);
+	m_options.compiler.outputs.storageLayout = (m_args.count(g_argStorageLayout) > 0);
 
-	m_options.estimateGas = (m_args.count(g_argGas) > 0);
+	m_options.compiler.estimateGas = (m_args.count(g_argGas) > 0);
 
 	po::notify(m_args);
 
 	if (m_args.count(g_argBasePath))
-		m_options.basePath = m_args[g_argBasePath].as<string>();
+		m_options.input.basePath = m_args[g_argBasePath].as<string>();
 
 	if (m_args.count(g_argAllowPaths))
 	{
@@ -804,7 +804,7 @@ General Information)").c_str(),
 			// it.
 			if (filesystem_path.filename() == ".")
 				filesystem_path.remove_filename();
-			m_options.allowedDirectories.insert(filesystem_path);
+			m_options.input.allowedDirectories.insert(filesystem_path);
 		}
 	}
 
@@ -816,7 +816,7 @@ General Information)").c_str(),
 			return false;
 		}
 		else
-			m_options.stopAfter = CompilerStack::State::Parsed;
+			m_options.output.stopAfter = CompilerStack::State::Parsed;
 	}
 
 	vector<string> const exclusiveModes = {
@@ -836,13 +836,13 @@ General Information)").c_str(),
 
 	if (m_args.count(g_argStandardJSON))
 	{
-		m_options.inputMode = InputMode::StandardJson;
+		m_options.input.mode = InputMode::StandardJson;
 
 		vector<string> inputFiles;
 		if (m_args.count(g_argInputFile))
 			inputFiles = m_args[g_argInputFile].as<vector<string>>();
 		if (inputFiles.size() == 1)
-			m_options.standardJsonInputFile = inputFiles[0];
+			m_options.input.standardJsonFile = inputFiles[0];
 		else if (inputFiles.size() > 1)
 		{
 			serr() << "If --" << g_argStandardJSON << " is used, only zero or one input files are supported." << endl;
@@ -869,12 +869,12 @@ General Information)").c_str(),
 			serr() << "Invalid option for --" << g_strEVMVersion << ": " << versionOptionStr << endl;
 			return false;
 		}
-		m_options.evmVersion = *versionOption;
+		m_options.output.evmVersion = *versionOption;
 	}
 
 	if (m_args.count(g_argAssemble) || m_args.count(g_argStrictAssembly) || m_args.count(g_argYul))
 	{
-		m_options.inputMode = InputMode::Assembler;
+		m_options.input.mode = InputMode::Assembler;
 
 		vector<string> const nonAssemblyModeOptions = {
 			// TODO: The list is not complete. Add more.
@@ -900,13 +900,13 @@ General Information)").c_str(),
 		// switch to assembly mode
 		using Input = yul::AssemblyStack::Language;
 		using Machine = yul::AssemblyStack::Machine;
-		m_options.inputAssemblyLanguage = m_args.count(g_argYul) ? Input::Yul : (m_args.count(g_argStrictAssembly) ? Input::StrictAssembly : Input::Assembly);
-		m_options.optimize = (m_args.count(g_argOptimize) > 0);
-		m_options.noOptimizeYul = (m_args.count(g_strNoOptimizeYul) > 0);
+		m_options.assembly.inputLanguage = m_args.count(g_argYul) ? Input::Yul : (m_args.count(g_argStrictAssembly) ? Input::StrictAssembly : Input::Assembly);
+		m_options.optimizer.enabled = (m_args.count(g_argOptimize) > 0);
+		m_options.optimizer.noOptimizeYul = (m_args.count(g_strNoOptimizeYul) > 0);
 
 		if (m_args.count(g_strYulOptimizations))
 		{
-			if (!m_options.optimize)
+			if (!m_options.optimizer.enabled)
 			{
 				serr() << "--" << g_strYulOptimizations << " is invalid if Yul optimizer is disabled" << endl;
 				return false;
@@ -922,33 +922,33 @@ General Information)").c_str(),
 				return false;
 			}
 
-			m_options.yulOptimiserSteps = m_args[g_strYulOptimizations].as<string>();
+			m_options.optimizer.yulSteps = m_args[g_strYulOptimizations].as<string>();
 		}
 
 		if (m_args.count(g_argMachine))
 		{
 			string machine = m_args[g_argMachine].as<string>();
 			if (machine == g_strEVM)
-				m_options.targetMachine = Machine::EVM;
+				m_options.assembly.targetMachine = Machine::EVM;
 			else if (machine == g_strEwasm)
-				m_options.targetMachine = Machine::Ewasm;
+				m_options.assembly.targetMachine = Machine::Ewasm;
 			else
 			{
 				serr() << "Invalid option for --" << g_argMachine << ": " << machine << endl;
 				return false;
 			}
 		}
-		if (m_options.targetMachine == Machine::Ewasm && m_options.inputAssemblyLanguage == Input::StrictAssembly)
-			m_options.inputAssemblyLanguage = Input::Ewasm;
+		if (m_options.assembly.targetMachine == Machine::Ewasm && m_options.assembly.inputLanguage == Input::StrictAssembly)
+			m_options.assembly.inputLanguage = Input::Ewasm;
 		if (m_args.count(g_strYulDialect))
 		{
 			string dialect = m_args[g_strYulDialect].as<string>();
 			if (dialect == g_strEVM)
-				m_options.inputAssemblyLanguage = Input::StrictAssembly;
+				m_options.assembly.inputLanguage = Input::StrictAssembly;
 			else if (dialect == g_strEwasm)
 			{
-				m_options.inputAssemblyLanguage = Input::Ewasm;
-				if (m_options.targetMachine != Machine::Ewasm)
+				m_options.assembly.inputLanguage = Input::Ewasm;
+				if (m_options.assembly.targetMachine != Machine::Ewasm)
 				{
 					serr() << "If you select Ewasm as --" << g_strYulDialect << ", ";
 					serr() << "--" << g_argMachine << " has to be Ewasm as well." << endl;
@@ -961,7 +961,7 @@ General Information)").c_str(),
 				return false;
 			}
 		}
-		if (m_options.optimize && (m_options.inputAssemblyLanguage != Input::StrictAssembly && m_options.inputAssemblyLanguage != Input::Ewasm))
+		if (m_options.optimizer.enabled && (m_options.assembly.inputLanguage != Input::StrictAssembly && m_options.assembly.inputLanguage != Input::Ewasm))
 		{
 			serr() <<
 				"Optimizer can only be used for strict assembly. Use --" <<
@@ -970,7 +970,7 @@ General Information)").c_str(),
 				endl;
 			return false;
 		}
-		if (m_options.targetMachine == Machine::Ewasm && m_options.inputAssemblyLanguage != Input::StrictAssembly && m_options.inputAssemblyLanguage != Input::Ewasm)
+		if (m_options.assembly.targetMachine == Machine::Ewasm && m_options.assembly.inputLanguage != Input::StrictAssembly && m_options.assembly.inputLanguage != Input::Ewasm)
 		{
 			serr() << "The selected input language is not directly supported when targeting the Ewasm machine ";
 			serr() << "and automatic translation is not available." << endl;
@@ -991,7 +991,7 @@ General Information)").c_str(),
 
 	if (m_args.count(g_argLink))
 	{
-		m_options.inputMode = InputMode::Linker;
+		m_options.input.mode = InputMode::Linker;
 		return true;
 	}
 
@@ -999,11 +999,11 @@ General Information)").c_str(),
 	{
 		string hashStr = m_args[g_argMetadataHash].as<string>();
 		if (hashStr == g_strIPFS)
-			m_options.metadataHash = CompilerStack::MetadataHash::IPFS;
+			m_options.metadata.hash = CompilerStack::MetadataHash::IPFS;
 		else if (hashStr == g_strSwarm)
-			m_options.metadataHash = CompilerStack::MetadataHash::Bzzr1;
+			m_options.metadata.hash = CompilerStack::MetadataHash::Bzzr1;
 		else if (hashStr == g_strNone)
-			m_options.metadataHash = CompilerStack::MetadataHash::None;
+			m_options.metadata.hash = CompilerStack::MetadataHash::None;
 		else
 		{
 			serr() << "Invalid option for --" << g_argMetadataHash << ": " << hashStr << endl;
@@ -1020,7 +1020,7 @@ General Information)").c_str(),
 			serr() << "Invalid option for --" << g_argModelCheckerContracts << ": " << contractsStr << endl;
 			return false;
 		}
-		m_options.modelCheckerSettings.contracts = move(*contracts);
+		m_options.modelChecker.settings.contracts = move(*contracts);
 	}
 
 	if (m_args.count(g_argModelCheckerEngine))
@@ -1032,7 +1032,7 @@ General Information)").c_str(),
 			serr() << "Invalid option for --" << g_argModelCheckerEngine << ": " << engineStr << endl;
 			return false;
 		}
-		m_options.modelCheckerSettings.engine = *engine;
+		m_options.modelChecker.settings.engine = *engine;
 	}
 
 	if (m_args.count(g_argModelCheckerTargets))
@@ -1044,26 +1044,26 @@ General Information)").c_str(),
 			serr() << "Invalid option for --" << g_argModelCheckerTargets << ": " << targetsStr << endl;
 			return false;
 		}
-		m_options.modelCheckerSettings.targets = *targets;
+		m_options.modelChecker.settings.targets = *targets;
 	}
 
 	if (m_args.count(g_argModelCheckerTimeout))
-		m_options.modelCheckerSettings.timeout = m_args[g_argModelCheckerTimeout].as<unsigned>();
+		m_options.modelChecker.settings.timeout = m_args[g_argModelCheckerTimeout].as<unsigned>();
 
-	m_options.metadataLiteral = (m_args.count(g_argMetadataLiteral) > 0);
-	m_options.initializeModelChecker =
+	m_options.metadata.literalSources = (m_args.count(g_argMetadataLiteral) > 0);
+	m_options.modelChecker.initialize =
 		m_args.count(g_argModelCheckerContracts) ||
 		m_args.count(g_argModelCheckerEngine) ||
 		m_args.count(g_argModelCheckerTargets) ||
 		m_args.count(g_argModelCheckerTimeout);
-	m_options.experimentalViaIR = (m_args.count(g_argExperimentalViaIR) > 0);
-	m_options.expectedExecutionsPerDeployment = m_args[g_argOptimizeRuns].as<unsigned>();
+	m_options.output.experimentalViaIR = (m_args.count(g_argExperimentalViaIR) > 0);
+	m_options.optimizer.expectedExecutionsPerDeployment = m_args[g_argOptimizeRuns].as<unsigned>();
 
-	m_options.optimize = (m_args.count(g_argOptimize) > 0);
-	m_options.noOptimizeYul = (m_args.count(g_strNoOptimizeYul) > 0);
+	m_options.optimizer.enabled = (m_args.count(g_argOptimize) > 0);
+	m_options.optimizer.noOptimizeYul = (m_args.count(g_strNoOptimizeYul) > 0);
 
-	OptimiserSettings settings = m_options.optimize ? OptimiserSettings::standard() : OptimiserSettings::minimal();
-	if (m_options.noOptimizeYul)
+	OptimiserSettings settings = m_options.optimizer.enabled ? OptimiserSettings::standard() : OptimiserSettings::minimal();
+	if (m_options.optimizer.noOptimizeYul)
 		settings.runYulOptimiser = false;
 	if (m_args.count(g_strYulOptimizations))
 	{
@@ -1083,15 +1083,15 @@ General Information)").c_str(),
 			return false;
 		}
 
-		m_options.yulOptimiserSteps = m_args[g_strYulOptimizations].as<string>();
+		m_options.optimizer.yulSteps = m_args[g_strYulOptimizations].as<string>();
 	}
 
 	if (m_args.count(g_argImportAst) > 0)
-		m_options.inputMode = InputMode::CompilerWithASTImport;
+		m_options.input.mode = InputMode::CompilerWithASTImport;
 	else
-		m_options.errorRecovery = (m_args.count(g_argErrorRecovery) > 0);
+		m_options.input.errorRecovery = (m_args.count(g_argErrorRecovery) > 0);
 
-	solAssert(m_options.inputMode == InputMode::Compiler || m_options.inputMode == InputMode::CompilerWithASTImport, "");
+	solAssert(m_options.input.mode == InputMode::Compiler || m_options.input.mode == InputMode::CompilerWithASTImport, "");
 	return true;
 }
 
@@ -1113,24 +1113,24 @@ bool CommandLineParser::parseCombinedJsonOption()
 			return false;
 		}
 
-	m_options.combinedJsonRequests = CombinedJsonRequests{};
-	m_options.combinedJsonRequests->abi = (requests.count(g_strAbi) > 0);
-	m_options.combinedJsonRequests->metadata = (requests.count("metadata") > 0);
-	m_options.combinedJsonRequests->binary = (requests.count(g_strBinary) > 0);
-	m_options.combinedJsonRequests->binaryRuntime = (requests.count(g_strBinaryRuntime) > 0);
-	m_options.combinedJsonRequests->opcodes = (requests.count(g_strOpcodes) > 0);
-	m_options.combinedJsonRequests->asm_ = (requests.count(g_strAsm) > 0);
-	m_options.combinedJsonRequests->storageLayout = (requests.count(g_strStorageLayout) > 0);
-	m_options.combinedJsonRequests->generatedSources = (requests.count(g_strGeneratedSources) > 0);
-	m_options.combinedJsonRequests->generatedSourcesRuntime = (requests.count(g_strGeneratedSourcesRuntime) > 0);
-	m_options.combinedJsonRequests->srcMap = (requests.count(g_strSrcMap) > 0);
-	m_options.combinedJsonRequests->srcMapRuntime = (requests.count(g_strSrcMapRuntime) > 0);
-	m_options.combinedJsonRequests->funDebug = (requests.count(g_strFunDebug) > 0);
-	m_options.combinedJsonRequests->funDebugRuntime = (requests.count(g_strFunDebugRuntime) > 0);
-	m_options.combinedJsonRequests->signatureHashes = (requests.count(g_strSignatureHashes) > 0);
-	m_options.combinedJsonRequests->natspecDev = (requests.count(g_strNatspecDev) > 0);
-	m_options.combinedJsonRequests->natspecUser = (requests.count(g_strNatspecUser) > 0);
-	m_options.combinedJsonRequests->ast = (requests.count(g_strAst) > 0);
+	m_options.compiler.combinedJsonRequests = CombinedJsonRequests{};
+	m_options.compiler.combinedJsonRequests->abi = (requests.count(g_strAbi) > 0);
+	m_options.compiler.combinedJsonRequests->metadata = (requests.count("metadata") > 0);
+	m_options.compiler.combinedJsonRequests->binary = (requests.count(g_strBinary) > 0);
+	m_options.compiler.combinedJsonRequests->binaryRuntime = (requests.count(g_strBinaryRuntime) > 0);
+	m_options.compiler.combinedJsonRequests->opcodes = (requests.count(g_strOpcodes) > 0);
+	m_options.compiler.combinedJsonRequests->asm_ = (requests.count(g_strAsm) > 0);
+	m_options.compiler.combinedJsonRequests->storageLayout = (requests.count(g_strStorageLayout) > 0);
+	m_options.compiler.combinedJsonRequests->generatedSources = (requests.count(g_strGeneratedSources) > 0);
+	m_options.compiler.combinedJsonRequests->generatedSourcesRuntime = (requests.count(g_strGeneratedSourcesRuntime) > 0);
+	m_options.compiler.combinedJsonRequests->srcMap = (requests.count(g_strSrcMap) > 0);
+	m_options.compiler.combinedJsonRequests->srcMapRuntime = (requests.count(g_strSrcMapRuntime) > 0);
+	m_options.compiler.combinedJsonRequests->funDebug = (requests.count(g_strFunDebug) > 0);
+	m_options.compiler.combinedJsonRequests->funDebugRuntime = (requests.count(g_strFunDebugRuntime) > 0);
+	m_options.compiler.combinedJsonRequests->signatureHashes = (requests.count(g_strSignatureHashes) > 0);
+	m_options.compiler.combinedJsonRequests->natspecDev = (requests.count(g_strNatspecDev) > 0);
+	m_options.compiler.combinedJsonRequests->natspecUser = (requests.count(g_strNatspecUser) > 0);
+	m_options.compiler.combinedJsonRequests->ast = (requests.count(g_strAst) > 0);
 
 	return true;
 }
