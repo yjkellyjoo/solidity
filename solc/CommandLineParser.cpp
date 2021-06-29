@@ -1146,7 +1146,7 @@ size_t CommandLineParser::countEnabledOptions(vector<string> const& _optionNames
 
 string CommandLineParser::joinOptionNames(vector<string> const& _optionNames, string _separator)
 {
-	return boost::algorithm::join(
+	return joinHumanReadable(
 		_optionNames | ranges::views::transform([](string const& _option){ return "--" + _option; }),
 		_separator
 	);
