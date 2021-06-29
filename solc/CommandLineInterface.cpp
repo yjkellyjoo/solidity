@@ -1480,7 +1480,7 @@ bool CommandLineInterface::processInput()
 
 	m_compiler = make_unique<CompilerStack>(m_fileReader.reader());
 
-	SourceReferenceFormatter formatter(serr(false), m_coloredOutput, m_withErrorIds);
+	SourceReferenceFormatter formatter(serr(false), *m_compiler, m_coloredOutput, m_withErrorIds);
 
 	try
 	{
@@ -1544,8 +1544,7 @@ bool CommandLineInterface::processInput()
 
 				if (!m_compiler->analyze())
 				{
-					for (auto const& error: m_compiler->errors())
-						formatter.printErrorInformation(*error);
+					formatter.printErrorInformation(m_compiler->errors());
 					astAssert(false, "Analysis of the AST failed");
 				}
 			}
@@ -1922,7 +1921,7 @@ bool CommandLineInterface::assemble(
 	for (auto const& sourceAndStack: assemblyStacks)
 	{
 		auto const& stack = sourceAndStack.second;
-		SourceReferenceFormatter formatter(serr(false), m_coloredOutput, m_withErrorIds);
+		SourceReferenceFormatter formatter(serr(false), stack, m_coloredOutput, m_withErrorIds);
 
 		for (auto const& error: stack.errors())
 		{

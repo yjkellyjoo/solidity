@@ -68,7 +68,7 @@ Dialect const& languageToDialect(AssemblyStack::Language _language, EVMVersion _
 }
 
 
-Scanner const& AssemblyStack::scanner() const
+Scanner const& AssemblyStack::scanner(string const&) const
 {
 	yulAssert(m_scanner, "");
 	return *m_scanner;
