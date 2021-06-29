@@ -83,10 +83,10 @@ BOOST_AUTO_TEST_CASE(no_options)
 	vector<string> commandLine = {"solc", "contract.sol"};
 
 	CommandLineOptions expectedOptions;
-	expectedOptions.sourceFilePaths = {"contract.sol"};
-	expectedOptions.expectedExecutionsPerDeployment = 200;
-	expectedOptions.initializeModelChecker = true;
-	expectedOptions.modelCheckerSettings = {
+	expectedOptions.input.paths = {"contract.sol"};
+	expectedOptions.optimizer.expectedExecutionsPerDeployment = 200;
+	expectedOptions.modelChecker.initialize = true;
+	expectedOptions.modelChecker.settings = {
 		ModelCheckerContracts::Default(),
 		ModelCheckerEngine::None(),
 		ModelCheckerTargets::Default(),
@@ -152,50 +152,50 @@ BOOST_AUTO_TEST_CASE(cli_mode_options)
 			};
 
 		CommandLineOptions expectedOptions;
-		expectedOptions.inputMode = inputMode;
-		expectedOptions.sourceFilePaths = {"contract.sol", "/tmp/projects/token.sol", "/home/user/lib/dex.sol", "file", "input.json"};
-		expectedOptions.remappings = {
+		expectedOptions.input.mode = inputMode;
+		expectedOptions.input.paths = {"contract.sol", "/tmp/projects/token.sol", "/home/user/lib/dex.sol", "file", "input.json"};
+		expectedOptions.input.remappings = {
 			{"", "/tmp", "/usr/lib/"},
 			{"a", "b", "c/d"},
 			{"", "contract.sol", ""},
 		};
-		expectedOptions.addStdin = true;
-		expectedOptions.basePath = "/home/user/";
-		expectedOptions.allowedDirectories = {"/tmp", "/home", "project", "../contracts", "", "c", "/usr/lib"};
-		expectedOptions.ignoreMissingInputFiles = true;
-		expectedOptions.errorRecovery = (inputMode == InputMode::Compiler);
-		expectedOptions.outputDir = "/tmp/out";
-		expectedOptions.overwriteFiles = true;
-		expectedOptions.evmVersion = EVMVersion::spuriousDragon();
-		expectedOptions.experimentalViaIR = true;
-		expectedOptions.revertStrings = RevertStrings::Strip;
-		expectedOptions.prettyJson = true;
-		expectedOptions.coloredOutput = false;
-		expectedOptions.withErrorIds = true;
-		expectedOptions.libraries = {
+		expectedOptions.input.addStdin = true;
+		expectedOptions.input.basePath = "/home/user/";
+		expectedOptions.input.allowedDirectories = {"/tmp", "/home", "project", "../contracts", "", "c", "/usr/lib"};
+		expectedOptions.input.ignoreMissingFiles = true;
+		expectedOptions.input.errorRecovery = (inputMode == InputMode::Compiler);
+		expectedOptions.output.dir = "/tmp/out";
+		expectedOptions.output.overwriteFiles = true;
+		expectedOptions.output.evmVersion = EVMVersion::spuriousDragon();
+		expectedOptions.output.experimentalViaIR = true;
+		expectedOptions.output.revertStrings = RevertStrings::Strip;
+		expectedOptions.linker.libraries = {
 			{"dir1/file1.sol:L", h160("1234567890123456789012345678901234567890")},
 			{"dir2/file2.sol:L", h160("1111122222333334444455555666667777788888")},
 		};
-		expectedOptions.selectedOutputs = {
+		expectedOptions.formatting.prettyJson = true;
+		expectedOptions.formatting.coloredOutput = false;
+		expectedOptions.formatting.withErrorIds = true;
+		expectedOptions.compiler.outputs = {
 			true, true, true, true, true,
 			true, true, true, true, true,
 			true, true, true, true, true,
 		};
-		expectedOptions.estimateGas = true;
-		expectedOptions.combinedJsonRequests = {
+		expectedOptions.compiler.estimateGas = true;
+		expectedOptions.compiler.combinedJsonRequests = {
 			true, true, true, true, true,
 			true, true, true, true, true,
 			true, true, true, true, true,
 			true, true,
 		};
-		expectedOptions.metadataHash = CompilerStack::MetadataHash::Bzzr1;
-		expectedOptions.metadataLiteral = true;
-		expectedOptions.optimize = true;
-		expectedOptions.expectedExecutionsPerDeployment = 1000;
-		expectedOptions.yulOptimiserSteps = "agf";
+		expectedOptions.metadata.hash = CompilerStack::MetadataHash::Bzzr1;
+		expectedOptions.metadata.literalSources = true;
+		expectedOptions.optimizer.enabled = true;
+		expectedOptions.optimizer.expectedExecutionsPerDeployment = 1000;
+		expectedOptions.optimizer.yulSteps = "agf";
 
-		expectedOptions.initializeModelChecker = true;
-		expectedOptions.modelCheckerSettings = {
+		expectedOptions.modelChecker.initialize = true;
+		expectedOptions.modelChecker.settings = {
 			{{{"contract1.yul", {"A"}}, {"contract2.yul", {"B"}}}},
 			{true, false},
 			{{VerificationTargetType::Underflow, VerificationTargetType::DivByZero}},
@@ -281,39 +281,39 @@ BOOST_AUTO_TEST_CASE(assembly_mode_options)
 			};
 
 		CommandLineOptions expectedOptions;
-		expectedOptions.inputMode = InputMode::Assembler;
+		expectedOptions.input.mode = InputMode::Assembler;
 
-		expectedOptions.sourceFilePaths = {"contract.yul", "/tmp/projects/token.yul", "/home/user/lib/dex.yul", "file", "input.json"};
-		expectedOptions.remappings = {
+		expectedOptions.input.paths = {"contract.yul", "/tmp/projects/token.yul", "/home/user/lib/dex.yul", "file", "input.json"};
+		expectedOptions.input.remappings = {
 			{"", "/tmp", "/usr/lib/"},
 			{"a", "b", "c/d"},
 			{"", "contract.yul", ""},
 		};
-		expectedOptions.addStdin = true;
-		expectedOptions.basePath = "/home/user/";
-		expectedOptions.allowedDirectories = {"/tmp", "/home", "project", "../contracts", "", "c", "/usr/lib"};
-		expectedOptions.ignoreMissingInputFiles = true;
-		expectedOptions.overwriteFiles = true;
-		expectedOptions.evmVersion = EVMVersion::spuriousDragon();
-		expectedOptions.revertStrings = RevertStrings::Strip;
-		expectedOptions.prettyJson = true;
-		expectedOptions.coloredOutput = false;
-		expectedOptions.withErrorIds = true;
-		expectedOptions.targetMachine = expectedMachine;
-		expectedOptions.inputAssemblyLanguage = expectedLanguage;
-		expectedOptions.libraries = {
+		expectedOptions.input.addStdin = true;
+		expectedOptions.input.basePath = "/home/user/";
+		expectedOptions.input.allowedDirectories = {"/tmp", "/home", "project", "../contracts", "", "c", "/usr/lib"};
+		expectedOptions.input.ignoreMissingFiles = true;
+		expectedOptions.output.overwriteFiles = true;
+		expectedOptions.output.evmVersion = EVMVersion::spuriousDragon();
+		expectedOptions.output.revertStrings = RevertStrings::Strip;
+		expectedOptions.assembly.targetMachine = expectedMachine;
+		expectedOptions.assembly.inputLanguage = expectedLanguage;
+		expectedOptions.linker.libraries = {
 			{"dir1/file1.sol:L", h160("1234567890123456789012345678901234567890")},
 			{"dir2/file2.sol:L", h160("1111122222333334444455555666667777788888")},
 		};
-		expectedOptions.selectedOutputs = {
+		expectedOptions.formatting.prettyJson = true;
+		expectedOptions.formatting.coloredOutput = false;
+		expectedOptions.formatting.withErrorIds = true;
+		expectedOptions.compiler.outputs = {
 			true, true, true, true, true,
 			true, true, true, true, true,
 			true, true, true, true, true,
 		};
 		if (expectedLanguage == AssemblyStack::Language::StrictAssembly || expectedLanguage == AssemblyStack::Language::Ewasm)
 		{
-			expectedOptions.optimize = true;
-			expectedOptions.yulOptimiserSteps = "agf";
+			expectedOptions.optimizer.enabled = true;
+			expectedOptions.optimizer.yulSteps = "agf";
 		}
 
 		optional<CommandLineOptions> parsedOptions = parseCommandLine(commandLine);
@@ -367,26 +367,26 @@ BOOST_AUTO_TEST_CASE(standard_json_mode_options)
 	};
 
 	CommandLineOptions expectedOptions;
-	expectedOptions.inputMode = InputMode::StandardJson;
-	expectedOptions.sourceFilePaths = {};
-	expectedOptions.standardJsonInputFile = "input.json";
-	expectedOptions.basePath = "/home/user/";
-	expectedOptions.allowedDirectories = {"/tmp", "/home", "project", "../contracts"};
-	expectedOptions.outputDir = "/tmp/out";
-	expectedOptions.overwriteFiles = true;
-	expectedOptions.prettyJson = true;
-	expectedOptions.coloredOutput = false;
-	expectedOptions.withErrorIds = true;
-	expectedOptions.revertStrings = RevertStrings::Strip;
-	expectedOptions.selectedOutputs = {
+	expectedOptions.input.mode = InputMode::StandardJson;
+	expectedOptions.input.paths = {};
+	expectedOptions.input.standardJsonFile = "input.json";
+	expectedOptions.input.basePath = "/home/user/";
+	expectedOptions.input.allowedDirectories = {"/tmp", "/home", "project", "../contracts"};
+	expectedOptions.output.dir = "/tmp/out";
+	expectedOptions.output.overwriteFiles = true;
+	expectedOptions.output.revertStrings = RevertStrings::Strip;
+	expectedOptions.formatting.prettyJson = true;
+	expectedOptions.formatting.coloredOutput = false;
+	expectedOptions.formatting.withErrorIds = true;
+	expectedOptions.compiler.outputs = {
 		true, true, true, true, true,
 		true, true, true, true, true,
 		true, true, true, true, true,
 	};
-	expectedOptions.estimateGas = true;
-	expectedOptions.combinedJsonRequests = CombinedJsonRequests{};
-	expectedOptions.combinedJsonRequests->abi = true;
-	expectedOptions.combinedJsonRequests->binary = true;
+	expectedOptions.compiler.estimateGas = true;
+	expectedOptions.compiler.combinedJsonRequests = CombinedJsonRequests{};
+	expectedOptions.compiler.combinedJsonRequests->abi = true;
+	expectedOptions.compiler.combinedJsonRequests->binary = true;
 
 	optional<CommandLineOptions> parsedOptions = parseCommandLine(commandLine);
 
