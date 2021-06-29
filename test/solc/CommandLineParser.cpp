@@ -164,9 +164,6 @@ BOOST_AUTO_TEST_CASE(cli_mode_options)
 		expectedOptions.allowedDirectories = {"/tmp", "/home", "project", "../contracts", "", "c", "/usr/lib"};
 		expectedOptions.ignoreMissingInputFiles = true;
 		expectedOptions.errorRecovery = (inputMode == InputMode::Compiler);
-		expectedOptions.evmVersion = EVMVersion::spuriousDragon();
-		expectedOptions.experimentalViaIR = true;
-		expectedOptions.revertStrings = RevertStrings::Strip;
 		expectedOptions.outputDir = "/tmp/out";
 		expectedOptions.overwriteFiles = true;
 		expectedOptions.evmVersion = EVMVersion::spuriousDragon();
