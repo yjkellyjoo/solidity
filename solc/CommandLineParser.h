@@ -49,7 +49,7 @@ enum class InputMode
 	Assembler,
 };
 
-struct OutputSelection
+struct CompilerOutputs
 {
 	bool astCompactJson = false;
 	bool asm_ = false;
@@ -134,7 +134,7 @@ struct CommandLineOptions
 
 	struct
 	{
-		OutputSelection outputs;
+		CompilerOutputs outputs;
 		bool estimateGas = false;
 		std::optional<CombinedJsonRequests> combinedJsonRequests;
 	} compiler;
