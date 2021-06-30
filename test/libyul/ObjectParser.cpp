@@ -165,8 +165,7 @@ BOOST_AUTO_TEST_CASE(to_string)
 BOOST_AUTO_TEST_CASE(use_src_empty)
 {
 	auto const mapping = ObjectParser::tryGetSourceLocationMapping("");
-	BOOST_REQUIRE(mapping);
-	BOOST_REQUIRE_EQUAL(mapping->size(), 0);
+	BOOST_REQUIRE(!mapping);
 }
 
 BOOST_AUTO_TEST_CASE(use_src_simple)
@@ -189,6 +188,16 @@ BOOST_AUTO_TEST_CASE(use_src_multiple)
 }
 
 // TODO: test quoted string containing at least @ and ", make sure result is unquoted again
+BOOST_AUTO_TEST_CASE(use_src_escaped_filenames)
+{
+	auto const mapping = ObjectParser::tryGetSourceLocationMapping(
+		R"(@use-src 42:"con\"tract\".sol")"
+	);
+	BOOST_REQUIRE(mapping);
+	BOOST_REQUIRE_EQUAL(mapping->size(), 1);
+	BOOST_REQUIRE(mapping->count(42));
+	BOOST_REQUIRE_EQUAL(mapping->at(42), "con\\\"tract\\\".sol");
+}
 // TODO: test invalid syntax
 
 BOOST_AUTO_TEST_SUITE_END()

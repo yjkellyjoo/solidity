@@ -152,15 +152,14 @@ optional<ObjectParser::ReverseSourceNameMap> ObjectParser::tryGetSourceLocationM
 		return nullopt;
 	solAssert(cm.size() == 3, "");
 
-	printf("match line\n"); // TODO: remove debug prints
-	for (size_t i = 0; i < cm.size(); ++i)
-		printf("  cm[%zu]: %s\n", i, cm[i].str().c_str());
-
 	// Let @c text point to the parameter value (last match).
 	text = string_view(cm[2].first, static_cast<size_t>(std::distance(cm[2].first, cm[2].second)));
 
 	// iteratively match for NUM : STRING_LITERAL and increment
-	static regex const itemRE(R"~~~(\s*(\d+)\s*:\s*"(([^\"]|\.)*)")~~~",
+	static regex const firstParamRE(R"~~~(\s*(\d+)\s*:\s*"((?:\\\"|[^\"])*)")~~~",
+		std::regex_constants::ECMAScript | std::regex_constants::optimize
+	);
+	static regex const continuationParamRE(R"~~~(\s*,\s*(\d+)\s*:\s*"((?:\\\"|[^\"])*)")~~~",
 		std::regex_constants::ECMAScript | std::regex_constants::optimize
 	);
 
@@ -169,17 +168,14 @@ optional<ObjectParser::ReverseSourceNameMap> ObjectParser::tryGetSourceLocationM
 	int k = 0;
 	while (!text.empty())
 	{
-		if (!std::regex_search(text.data(), text.data() + _text.size(), cm, itemRE))
+		if (!std::regex_search(text.data(), text.data() + _text.size(), cm, k ? continuationParamRE : firstParamRE))
 			return nullopt;
-		solAssert(cm.size() == 4, "");
-		printf("match/%d\n", ++k);
-		for (size_t i = 0; i < cm.size(); ++i)
-			printf("cm[%zu]: %s\n", i, cm[i].str().c_str());
+		solAssert(cm.size() == 3, "");
 
 		auto const len = cm[0].length();
 		solAssert(len > 0, "");
 		text.remove_prefix(static_cast<size_t>(len));
-		solAssert(k <= 4, "");
+		solAssert(k <= 16, ""); // A sanity-check to avoid abuse. Should never happen.
 
 		auto const sourceIndex = toUnsignedInt(cm[1].str());
 		if (!sourceIndex)
