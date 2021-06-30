@@ -139,7 +139,6 @@ optional<ObjectParser::ReverseSourceNameMap> ObjectParser::tryGetSourceLocationM
 	// UseSrcList := UseSrc (',' UseSrc)*
 	// UseSrc     := [0-9]+ ':' FileName
 	// FileName   := "(([^\"]|\.)*)"
-	printf("tryGetSourceLocationMapping: \"%s\"\n", _text.c_str());
 
 	// Matches some "@use-src TEXT".
 	static std::regex const lineRE = std::regex(
@@ -170,6 +169,7 @@ optional<ObjectParser::ReverseSourceNameMap> ObjectParser::tryGetSourceLocationM
 	{
 		if (!std::regex_search(text.data(), text.data() + _text.size(), cm, k ? continuationParamRE : firstParamRE))
 			return nullopt;
+		++k;
 		solAssert(cm.size() == 3, "");
 
 		auto const len = cm[0].length();
