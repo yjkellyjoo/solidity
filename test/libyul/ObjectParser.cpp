@@ -199,6 +199,16 @@ BOOST_AUTO_TEST_CASE(use_src_escaped_filenames)
 }
 
 // TODO: test invalid syntax
+BOOST_AUTO_TEST_CASE(use_src_invalid_syntax_open_quote)
+{
+	// open quote arg
+	auto const mapping = ObjectParser::tryGetSourceLocationMapping(
+		R"(@use-src 42:"con)"
+	);
+	// invalid source index: R"(@use-src -1:"foo.sol")"
+	// no colon:             R"(@use-src -1_"foo.sol")"
+	//
+}
 
 BOOST_AUTO_TEST_SUITE_END()
 
