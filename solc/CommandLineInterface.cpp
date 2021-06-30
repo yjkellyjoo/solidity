@@ -1929,7 +1929,7 @@ bool CommandLineInterface::assemble(
 			g_hasOutput = true;
 			formatter.printErrorInformation(*error);
 		}
-		if (!Error::containsOnlyWarnings(stack.errors()))
+		if (!Error::containsAtWorseWarnings(stack.errors()))
 			successful = false;
 	}
 
