@@ -157,7 +157,7 @@ The function ``g(1, 2)`` returns the following values:
 - Old code generator: ``10`` (``add(2 + 3, 2 + 3)``) but the return value is unspecified in general
 - New code generator: ``10`` but the return value is not guaranteed
 
-The global functions ``addmod`` and ``mulmod`` are evaluated right-to-left by the old code generator
+The arguments to the global functions ``addmod`` and ``mulmod`` are evaluated right-to-left by the old code generator
 and left-to-right by the new code generator.
 For example:
 
