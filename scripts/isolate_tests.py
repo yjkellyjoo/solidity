@@ -35,54 +35,32 @@ def extract_test_cases(path):
 
     return tests
 
-# Contract sources are indented by 4 spaces.
-# Look for `pragma solidity`, `contract`, `library` or `interface`
-# and abort a line not indented properly.
-def extract_docs_cases(path):
+# Extract code examples based on the 'beginMarker' parameter
+# up until we reach EOF or a line that is not empty and doesn't start with 4
+# spaces.
+def extract_docs_cases(path, beginMarker):
     insideBlock = False
-    insideBlockParameters = False
-    pastBlockParameters = False
-    extractedLines = []
     tests = []
 
     # Collect all snippets of indented blocks
-
     with open(path, mode='r', errors='ignore', encoding='utf8', newline='') as f:
         lines = f.read().splitlines()
-    for l in lines:
-        if l != '':
-            if not insideBlock and l.startswith(' '):
-                # start new test
-                extractedLines += ['']
-                insideBlockParameters = False
-                pastBlockParameters = False
-            insideBlock = l.startswith(' ')
-        if insideBlock:
-            if not pastBlockParameters:
-                # NOTE: For simplicity this allows blank lines between block parameters even
-                # though Sphinx does not. This does not matter since the first non-empty line in
-                # a Solidity file cannot start with a colon anyway.
-                if not l.strip().startswith(':') and (l != '' or not insideBlockParameters):
-                    insideBlockParameters = False
-                    pastBlockParameters = True
-                else:
-                    insideBlockParameters = True
 
-            if not insideBlockParameters:
-                extractedLines[-1] += l + '\n'
+    for line in lines:
+        if insideBlock:
+            if line == '' or line.startswith("    "):
+                if line != "    :force:": # Ignore instruction for Shpinx
+                    tests[-1] += line + "\n"
+            else:
+                insideBlock = False
+        elif line.lower().startswith(beginMarker):
+            insideBlock = True
+            tests += ['']
 
     codeStart = "(// SPDX-License-Identifier:|pragma solidity|contract.*{|library.*{|interface.*{)"
 
-    # Filter all tests that do not contain Solidity or are indented incorrectly.
-    for lines in extractedLines:
-        if re.search(r'^\s{0,3}' + codeStart, lines, re.MULTILINE):
-            print("Indentation error in " + path + ":")
-            print(lines)
-            exit(1)
-        if re.search(r'^\s{4}' + codeStart, lines, re.MULTILINE):
-            tests.append(lines)
-
-    return tests
+    # Filter out tests that are not compilable.
+    return [test.lstrip("\n") for test in list(filter(lambda test: re.search(r'^\s{4}' + codeStart, test, re.MULTILINE), tests))]
 
 def write_cases(f, tests):
     cleaned_filename = f.replace(".","_").replace("-","_").replace(" ","_").lower()
@@ -96,7 +74,7 @@ def write_cases(f, tests):
 
 def extract_and_write(f, path):
     if docs:
-        cases = extract_docs_cases(path)
+        cases = extract_docs_cases(path, ".. code-block:: solidity")
     else:
         if f.endswith('.sol'):
             with open(path, mode='r', encoding='utf8', newline='') as _f:
